@@ -15,7 +15,9 @@ import {
   AlertCircle,
   Save,
   Loader2,
-  RefreshCw
+  RefreshCw,
+  Image as ImageIcon,
+  GripVertical
 } from 'lucide-react';
 import { useAdminStore } from '@/store/admin';
 import { useProductsStore } from '@/store/products';
@@ -91,6 +93,118 @@ function LoginForm() {
   );
 }
 
+// Composant pour gérer les images multiples
+function MultiImageInput({ 
+  images, 
+  onChange 
+}: { 
+  images: string[]; 
+  onChange: (images: string[]) => void;
+}) {
+  const [newImageUrl, setNewImageUrl] = useState('');
+
+  const addImage = () => {
+    if (newImageUrl.trim()) {
+      onChange([...images, newImageUrl.trim()]);
+      setNewImageUrl('');
+    }
+  };
+
+  const removeImage = (index: number) => {
+    onChange(images.filter((_, i) => i !== index));
+  };
+
+  const moveImage = (from: number, to: number) => {
+    const newImages = [...images];
+    const [removed] = newImages.splice(from, 1);
+    newImages.splice(to, 0, removed);
+    onChange(newImages);
+  };
+
+  return (
+    <div className="space-y-4">
+      <label className="block text-sm font-medium text-stone-700">
+        Images du produit *
+      </label>
+      
+      {/* Liste des images */}
+      {images.length > 0 && (
+        <div className="grid grid-cols-4 gap-3">
+          {images.map((image, index) => (
+            <div
+              key={index}
+              className="relative group aspect-square rounded-xl overflow-hidden bg-stone-100 border-2 border-stone-200"
+            >
+              <img
+                src={image}
+                alt={`Image ${index + 1}`}
+                className="w-full h-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ccc"><rect width="24" height="24"/></svg>';
+                }}
+              />
+              
+              {/* Badge première image */}
+              {index === 0 && (
+                <span className="absolute top-1 left-1 px-2 py-0.5 bg-amber-500 text-white text-xs font-medium rounded">
+                  Principale
+                </span>
+              )}
+              
+              {/* Actions */}
+              <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                {index > 0 && (
+                  <button
+                    type="button"
+                    onClick={() => moveImage(index, 0)}
+                    className="p-1.5 bg-white rounded-lg text-stone-700 hover:bg-amber-100"
+                    title="Définir comme principale"
+                  >
+                    <GripVertical className="w-4 h-4" />
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => removeImage(index)}
+                  className="p-1.5 bg-white rounded-lg text-red-500 hover:bg-red-100"
+                  title="Supprimer"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+      
+      {/* Ajouter une image */}
+      <div className="flex gap-2">
+        <input
+          type="url"
+          value={newImageUrl}
+          onChange={(e) => setNewImageUrl(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addImage())}
+          className="flex-1 px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+          placeholder="https://images.unsplash.com/..."
+        />
+        <button
+          type="button"
+          onClick={addImage}
+          disabled={!newImageUrl.trim()}
+          className="px-4 py-3 bg-amber-100 text-amber-700 rounded-xl font-medium hover:bg-amber-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+        >
+          <Plus className="w-5 h-5" />
+          Ajouter
+        </button>
+      </div>
+      
+      <p className="text-xs text-stone-500">
+        💡 La première image sera l&apos;image principale du produit. Glissez pour réorganiser.
+      </p>
+    </div>
+  );
+}
+
 // Formulaire d'ajout/édition de produit
 function ProductForm({ 
   product, 
@@ -99,7 +213,7 @@ function ProductForm({
   isLoading
 }: { 
   product?: Product; 
-  onSave: (data: Omit<Product, 'id'>) => void;
+  onSave: (data: Omit<Product, 'id' | 'image'>) => void;
   onCancel: () => void;
   isLoading?: boolean;
 }) {
@@ -107,7 +221,7 @@ function ProductForm({
     name: product?.name || '',
     description: product?.description || '',
     price: product?.price || 0,
-    image: product?.image || '',
+    images: product?.images?.length ? product.images : (product?.image ? [product.image] : []),
     category: product?.category || categories[0].id,
     ageRange: product?.ageRange || '3-6 ans',
     inStock: product?.inStock ?? true,
@@ -116,11 +230,15 @@ function ProductForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (formData.images.length === 0) {
+      alert('Veuillez ajouter au moins une image');
+      return;
+    }
     onSave({
       name: formData.name,
       description: formData.description,
       price: Number(formData.price),
-      image: formData.image,
+      images: formData.images,
       category: formData.category,
       ageRange: formData.ageRange,
       inStock: formData.inStock,
@@ -235,32 +353,12 @@ function ProductForm({
               </button>
             </div>
 
+            {/* Multi-image input */}
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-stone-700 mb-2">
-                URL de l&apos;image *
-              </label>
-              <div className="flex gap-3">
-                <input
-                  type="url"
-                  required
-                  value={formData.image}
-                  onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                  className="flex-1 px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
-                  placeholder="https://images.unsplash.com/..."
-                />
-                {formData.image && (
-                  <div className="w-12 h-12 rounded-lg overflow-hidden bg-stone-100 flex-shrink-0">
-                    <img
-                      src={formData.image}
-                      alt="Aperçu"
-                      className="w-full h-full object-cover"
-                      onError={(e) => {
-                        (e.target as HTMLImageElement).src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23ccc"><path d="M4 5h16a1 1 0 011 1v12a1 1 0 01-1 1H4a1 1 0 01-1-1V6a1 1 0 011-1zm0 2v10h16V7H4z"/></svg>';
-                      }}
-                    />
-                  </div>
-                )}
-              </div>
+              <MultiImageInput
+                images={formData.images}
+                onChange={(images) => setFormData({ ...formData, images })}
+              />
             </div>
 
             <div className="md:col-span-2">
@@ -342,7 +440,7 @@ function AdminDashboard() {
       p.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleSave = async (data: Omit<Product, 'id'>) => {
+  const handleSave = async (data: Omit<Product, 'id' | 'image'>) => {
     if (editingProduct) {
       await updateProduct(editingProduct.id, data);
     } else {
@@ -468,6 +566,7 @@ function AdminDashboard() {
                     <th className="text-left px-6 py-4 text-sm font-semibold text-stone-600">Produit</th>
                     <th className="text-left px-6 py-4 text-sm font-semibold text-stone-600">Catégorie</th>
                     <th className="text-left px-6 py-4 text-sm font-semibold text-stone-600">Prix</th>
+                    <th className="text-center px-6 py-4 text-sm font-semibold text-stone-600">Images</th>
                     <th className="text-center px-6 py-4 text-sm font-semibold text-stone-600">Stock</th>
                     <th className="text-right px-6 py-4 text-sm font-semibold text-stone-600">Actions</th>
                   </tr>
@@ -479,7 +578,7 @@ function AdminDashboard() {
                         <div className="flex items-center gap-4">
                           <div className="w-14 h-14 rounded-xl overflow-hidden bg-stone-100 flex-shrink-0">
                             <img
-                              src={product.image}
+                              src={product.images?.[0] || product.image}
                               alt={product.name}
                               className="w-full h-full object-cover"
                             />
@@ -497,6 +596,12 @@ function AdminDashboard() {
                       </td>
                       <td className="px-6 py-4 font-semibold text-amber-600">
                         {formatPrice(product.price)}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-600 text-sm rounded-full">
+                          <ImageIcon className="w-4 h-4" />
+                          {product.images?.length || 1}
+                        </span>
                       </td>
                       <td className="px-6 py-4">
                         <button

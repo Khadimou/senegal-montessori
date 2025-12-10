@@ -3,7 +3,8 @@ export interface Product {
   name: string;
   description: string;
   price: number;
-  image: string;
+  images: string[];  // Plusieurs images maintenant
+  image: string;     // Image principale (première de la liste)
   category: string;
   ageRange: string;
   inStock: boolean;
@@ -20,4 +21,3 @@ export interface Category {
   description: string;
   image: string;
 }
-

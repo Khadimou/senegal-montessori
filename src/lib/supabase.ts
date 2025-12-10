@@ -11,7 +11,7 @@ export interface DbProduct {
   name: string;
   description: string;
   price: number;
-  image: string;
+  images: string[];  // Array d'images
   category: string;
   age_range: string;
   in_stock: boolean;
@@ -39,4 +39,3 @@ export interface OrderItem {
   quantity: number;
   price: number;
 }
-

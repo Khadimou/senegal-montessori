@@ -2,7 +2,6 @@
 
 import { use, useState, useEffect } from 'react';
 import { notFound } from 'next/navigation';
-import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowLeft, ShoppingBag, Truck, ShieldCheck, RotateCcw, Check, Minus, Plus } from 'lucide-react';
@@ -10,6 +9,7 @@ import { formatPrice } from '@/data/products';
 import { useCartStore } from '@/store/cart';
 import { useProductsStore } from '@/store/products';
 import ProductCard from '@/components/ProductCard';
+import ImageGallery from '@/components/ImageGallery';
 
 interface ProductPageProps {
   params: Promise<{ id: string }>;
@@ -51,6 +51,13 @@ export default function ProductPage({ params }: ProductPageProps) {
     openCart();
   };
 
+  // Utiliser images si disponible, sinon fallback sur image
+  const productImages = product.images?.length > 0 
+    ? product.images 
+    : product.image 
+      ? [product.image] 
+      : [];
+
   return (
     <div className="min-h-screen bg-stone-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -67,24 +74,16 @@ export default function ProductPage({ params }: ProductPageProps) {
 
         {/* Product Details */}
         <div className="grid lg:grid-cols-2 gap-12 mb-24">
-          {/* Image */}
+          {/* Image Gallery */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="relative aspect-square rounded-3xl overflow-hidden bg-white shadow-lg"
+            className="relative"
           >
-            <Image
-              src={product.image}
-              alt={product.name}
-              fill
-              className="object-cover"
-              priority
-            />
+            <ImageGallery images={productImages} alt={product.name} />
             {!product.inStock && (
-              <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                <span className="px-6 py-3 bg-white text-stone-800 font-semibold rounded-xl">
-                  Rupture de stock
-                </span>
+              <div className="absolute top-4 left-4 px-4 py-2 bg-stone-800 text-white font-medium rounded-xl">
+                Rupture de stock
               </div>
             )}
           </motion.div>

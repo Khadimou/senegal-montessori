@@ -7,8 +7,8 @@ interface ProductsState {
   isLoading: boolean;
   error: string | null;
   fetchProducts: () => Promise<void>;
-  addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
-  updateProduct: (id: string, updates: Partial<Product>) => Promise<void>;
+  addProduct: (product: Omit<Product, 'id' | 'image'>) => Promise<void>;
+  updateProduct: (id: string, updates: Partial<Omit<Product, 'image'>>) => Promise<void>;
   deleteProduct: (id: string) => Promise<void>;
   updateStock: (id: string, inStock: boolean) => Promise<void>;
 }
@@ -19,7 +19,8 @@ const dbToProduct = (db: DbProduct): Product => ({
   name: db.name,
   description: db.description,
   price: db.price,
-  image: db.image,
+  images: db.images || [],
+  image: db.images?.[0] || '',  // Première image comme image principale
   category: db.category,
   ageRange: db.age_range,
   inStock: db.in_stock,
@@ -27,11 +28,11 @@ const dbToProduct = (db: DbProduct): Product => ({
 });
 
 // Convertir du format App vers le format DB
-const productToDb = (product: Omit<Product, 'id'>) => ({
+const productToDb = (product: Omit<Product, 'id' | 'image'>) => ({
   name: product.name,
   description: product.description,
   price: product.price,
-  image: product.image,
+  images: product.images,
   category: product.category,
   age_range: product.ageRange,
   in_stock: product.inStock,
@@ -90,7 +91,7 @@ export const useProductsStore = create<ProductsState>((set, get) => ({
       if (updates.name !== undefined) dbUpdates.name = updates.name;
       if (updates.description !== undefined) dbUpdates.description = updates.description;
       if (updates.price !== undefined) dbUpdates.price = updates.price;
-      if (updates.image !== undefined) dbUpdates.image = updates.image;
+      if (updates.images !== undefined) dbUpdates.images = updates.images;
       if (updates.category !== undefined) dbUpdates.category = updates.category;
       if (updates.ageRange !== undefined) dbUpdates.age_range = updates.ageRange;
       if (updates.inStock !== undefined) dbUpdates.in_stock = updates.inStock;
@@ -105,7 +106,13 @@ export const useProductsStore = create<ProductsState>((set, get) => ({
 
       set((state) => ({
         products: state.products.map((product) =>
-          product.id === id ? { ...product, ...updates } : product
+          product.id === id 
+            ? { 
+                ...product, 
+                ...updates,
+                image: updates.images?.[0] || product.image 
+              } 
+            : product
         ),
         isLoading: false,
       }));
