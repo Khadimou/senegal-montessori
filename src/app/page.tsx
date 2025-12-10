@@ -5,9 +5,11 @@ import { motion } from 'framer-motion';
 import { ArrowRight, BookOpen, Heart, Users, Sparkles } from 'lucide-react';
 import Hero from '@/components/Hero';
 import ProductCard from '@/components/ProductCard';
-import { products, categories } from '@/data/products';
+import { useProductsStore } from '@/store/products';
+import { categories } from '@/data/products';
 
 export default function HomePage() {
+  const { products } = useProductsStore();
   const featuredProducts = products.slice(0, 4);
 
   return (

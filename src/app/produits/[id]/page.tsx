@@ -1,15 +1,15 @@
 'use client';
 
-import { use } from 'react';
+import { use, useState, useEffect } from 'react';
 import { notFound } from 'next/navigation';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowLeft, ShoppingBag, Truck, ShieldCheck, RotateCcw, Check, Minus, Plus } from 'lucide-react';
-import { getProductById, getProductsByCategory, formatPrice } from '@/data/products';
+import { formatPrice } from '@/data/products';
 import { useCartStore } from '@/store/cart';
+import { useProductsStore } from '@/store/products';
 import ProductCard from '@/components/ProductCard';
-import { useState } from 'react';
 
 interface ProductPageProps {
   params: Promise<{ id: string }>;
@@ -17,16 +17,31 @@ interface ProductPageProps {
 
 export default function ProductPage({ params }: ProductPageProps) {
   const { id } = use(params);
-  const product = getProductById(id);
+  const { products } = useProductsStore();
   const [quantity, setQuantity] = useState(1);
   const { addItem, openCart } = useCartStore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  const product = products.find(p => p.id === id);
 
   if (!product) {
     notFound();
   }
 
-  const relatedProducts = getProductsByCategory(product.category)
-    .filter(p => p.id !== product.id)
+  const relatedProducts = products
+    .filter(p => p.category === product.category && p.id !== product.id)
     .slice(0, 4);
 
   const handleAddToCart = () => {
@@ -181,4 +196,3 @@ export default function ProductPage({ params }: ProductPageProps) {
     </div>
   );
 }
-

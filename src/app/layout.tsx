@@ -3,6 +3,7 @@ import { DM_Sans, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
+import ProductsProvider from "@/components/ProductsProvider";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -37,11 +38,13 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`${dmSans.variable} ${playfair.variable}`}>
       <body className="font-sans antialiased bg-stone-50 text-stone-900">
-        <Header />
-        <main className="min-h-screen pt-20">
-          {children}
-        </main>
-        <Footer />
+        <ProductsProvider>
+          <Header />
+          <main className="min-h-screen pt-20">
+            {children}
+          </main>
+          <Footer />
+        </ProductsProvider>
       </body>
     </html>
   );

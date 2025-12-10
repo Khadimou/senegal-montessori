@@ -4,9 +4,11 @@ import { useState, useMemo } from 'react';
 import { motion } from 'framer-motion';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import ProductCard from '@/components/ProductCard';
-import { products, categories } from '@/data/products';
+import { useProductsStore } from '@/store/products';
+import { categories } from '@/data/products';
 
 export default function ProductsPage() {
+  const { products } = useProductsStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
@@ -18,7 +20,7 @@ export default function ProductsPage() {
       const matchesCategory = !selectedCategory || product.category === selectedCategory;
       return matchesSearch && matchesCategory;
     });
-  }, [searchQuery, selectedCategory]);
+  }, [products, searchQuery, selectedCategory]);
 
   return (
     <div className="min-h-screen bg-stone-50">
@@ -178,4 +180,3 @@ export default function ProductsPage() {
     </div>
   );
 }
-
