@@ -14,9 +14,9 @@ import {
   Search,
   AlertCircle,
   Save,
-  Image as ImageIcon
+  Loader2,
+  RefreshCw
 } from 'lucide-react';
-import Image from 'next/image';
 import { useAdminStore } from '@/store/admin';
 import { useProductsStore } from '@/store/products';
 import { categories, formatPrice } from '@/data/products';
@@ -95,11 +95,13 @@ function LoginForm() {
 function ProductForm({ 
   product, 
   onSave, 
-  onCancel 
+  onCancel,
+  isLoading
 }: { 
   product?: Product; 
   onSave: (data: Omit<Product, 'id'>) => void;
   onCancel: () => void;
+  isLoading?: boolean;
 }) {
   const [formData, setFormData] = useState({
     name: product?.name || '',
@@ -299,10 +301,20 @@ function ProductForm({
             </button>
             <button
               type="submit"
-              className="flex-1 py-3 px-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium hover:from-amber-600 hover:to-orange-600 transition-all flex items-center justify-center gap-2"
+              disabled={isLoading}
+              className="flex-1 py-3 px-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium hover:from-amber-600 hover:to-orange-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
             >
-              <Save className="w-5 h-5" />
-              {product ? 'Enregistrer' : 'Ajouter'}
+              {isLoading ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Enregistrement...
+                </>
+              ) : (
+                <>
+                  <Save className="w-5 h-5" />
+                  {product ? 'Enregistrer' : 'Ajouter'}
+                </>
+              )}
             </button>
           </div>
         </form>
@@ -314,15 +326,15 @@ function ProductForm({
 // Dashboard Admin
 function AdminDashboard() {
   const { logout } = useAdminStore();
-  const { products, initializeProducts, addProduct, updateProduct, deleteProduct, updateStock } = useProductsStore();
+  const { products, isLoading, error, fetchProducts, addProduct, updateProduct, deleteProduct, updateStock } = useProductsStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | undefined>();
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
 
   useEffect(() => {
-    initializeProducts();
-  }, [initializeProducts]);
+    fetchProducts();
+  }, [fetchProducts]);
 
   const filteredProducts = products.filter(
     (p) =>
@@ -330,11 +342,11 @@ function AdminDashboard() {
       p.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const handleSave = (data: Omit<Product, 'id'>) => {
+  const handleSave = async (data: Omit<Product, 'id'>) => {
     if (editingProduct) {
-      updateProduct(editingProduct.id, data);
+      await updateProduct(editingProduct.id, data);
     } else {
-      addProduct(data);
+      await addProduct(data);
     }
     setShowForm(false);
     setEditingProduct(undefined);
@@ -345,8 +357,8 @@ function AdminDashboard() {
     setShowForm(true);
   };
 
-  const handleDelete = (id: string) => {
-    deleteProduct(id);
+  const handleDelete = async (id: string) => {
+    await deleteProduct(id);
     setDeleteConfirm(null);
   };
 
@@ -368,21 +380,38 @@ function AdminDashboard() {
               </div>
               <div>
                 <h1 className="font-bold text-stone-800">Administration</h1>
-                <p className="text-xs text-stone-500">Gestion des produits</p>
+                <p className="text-xs text-stone-500">Gestion des produits • Supabase</p>
               </div>
             </div>
-            <button
-              onClick={logout}
-              className="flex items-center gap-2 px-4 py-2 text-stone-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-            >
-              <LogOut className="w-5 h-5" />
-              <span className="hidden sm:inline">Déconnexion</span>
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => fetchProducts()}
+                className="p-2 text-stone-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                title="Rafraîchir"
+              >
+                <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+              </button>
+              <button
+                onClick={logout}
+                className="flex items-center gap-2 px-4 py-2 text-stone-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              >
+                <LogOut className="w-5 h-5" />
+                <span className="hidden sm:inline">Déconnexion</span>
+              </button>
+            </div>
           </div>
         </div>
       </header>
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-center gap-2">
+            <AlertCircle className="w-5 h-5" />
+            {error}
+          </div>
+        )}
+
         {/* Stats */}
         <div className="grid grid-cols-3 gap-4 mb-8">
           <div className="bg-white rounded-2xl p-5 shadow-sm">
@@ -423,117 +452,125 @@ function AdminDashboard() {
           </button>
         </div>
 
-        {/* Products List */}
-        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-stone-50 border-b border-stone-200">
-                <tr>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-stone-600">Produit</th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-stone-600">Catégorie</th>
-                  <th className="text-left px-6 py-4 text-sm font-semibold text-stone-600">Prix</th>
-                  <th className="text-center px-6 py-4 text-sm font-semibold text-stone-600">Stock</th>
-                  <th className="text-right px-6 py-4 text-sm font-semibold text-stone-600">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-stone-100">
-                {filteredProducts.map((product) => (
-                  <tr key={product.id} className="hover:bg-stone-50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-4">
-                        <div className="w-14 h-14 rounded-xl overflow-hidden bg-stone-100 flex-shrink-0">
-                          <img
-                            src={product.image}
-                            alt={product.name}
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                        <div>
-                          <p className="font-medium text-stone-800">{product.name}</p>
-                          <p className="text-sm text-stone-500">{product.ageRange}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="px-3 py-1 bg-stone-100 text-stone-600 text-sm rounded-full">
-                        {categories.find((c) => c.id === product.category)?.name || product.category}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 font-semibold text-amber-600">
-                      {formatPrice(product.price)}
-                    </td>
-                    <td className="px-6 py-4">
-                      <button
-                        onClick={() => updateStock(product.id, !product.inStock)}
-                        className={`mx-auto flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
-                          product.inStock
-                            ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
-                            : 'bg-red-100 text-red-700 hover:bg-red-200'
-                        }`}
-                      >
-                        {product.inStock ? (
-                          <>
-                            <Check className="w-4 h-4" />
-                            En stock
-                          </>
-                        ) : (
-                          <>
-                            <X className="w-4 h-4" />
-                            Rupture
-                          </>
-                        )}
-                      </button>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => handleEdit(product)}
-                          className="p-2 text-stone-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
-                          title="Modifier"
-                        >
-                          <Edit className="w-5 h-5" />
-                        </button>
-                        {deleteConfirm === product.id ? (
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => handleDelete(product.id)}
-                              className="p-2 text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
-                              title="Confirmer"
-                            >
-                              <Check className="w-5 h-5" />
-                            </button>
-                            <button
-                              onClick={() => setDeleteConfirm(null)}
-                              className="p-2 text-stone-500 hover:bg-stone-100 rounded-lg transition-colors"
-                              title="Annuler"
-                            >
-                              <X className="w-5 h-5" />
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setDeleteConfirm(product.id)}
-                            className="p-2 text-stone-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                            title="Supprimer"
-                          >
-                            <Trash2 className="w-5 h-5" />
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        {/* Loading State */}
+        {isLoading && products.length === 0 ? (
+          <div className="bg-white rounded-2xl p-12 text-center">
+            <Loader2 className="w-12 h-12 text-amber-500 animate-spin mx-auto mb-4" />
+            <p className="text-stone-500">Chargement des produits...</p>
           </div>
-
-          {filteredProducts.length === 0 && (
-            <div className="text-center py-12">
-              <Package className="w-12 h-12 text-stone-300 mx-auto mb-3" />
-              <p className="text-stone-500">Aucun produit trouvé</p>
+        ) : (
+          /* Products List */
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-stone-50 border-b border-stone-200">
+                  <tr>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-stone-600">Produit</th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-stone-600">Catégorie</th>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-stone-600">Prix</th>
+                    <th className="text-center px-6 py-4 text-sm font-semibold text-stone-600">Stock</th>
+                    <th className="text-right px-6 py-4 text-sm font-semibold text-stone-600">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100">
+                  {filteredProducts.map((product) => (
+                    <tr key={product.id} className="hover:bg-stone-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-4">
+                          <div className="w-14 h-14 rounded-xl overflow-hidden bg-stone-100 flex-shrink-0">
+                            <img
+                              src={product.image}
+                              alt={product.name}
+                              className="w-full h-full object-cover"
+                            />
+                          </div>
+                          <div>
+                            <p className="font-medium text-stone-800">{product.name}</p>
+                            <p className="text-sm text-stone-500">{product.ageRange}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="px-3 py-1 bg-stone-100 text-stone-600 text-sm rounded-full">
+                          {categories.find((c) => c.id === product.category)?.name || product.category}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 font-semibold text-amber-600">
+                        {formatPrice(product.price)}
+                      </td>
+                      <td className="px-6 py-4">
+                        <button
+                          onClick={() => updateStock(product.id, !product.inStock)}
+                          className={`mx-auto flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium transition-colors ${
+                            product.inStock
+                              ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                              : 'bg-red-100 text-red-700 hover:bg-red-200'
+                          }`}
+                        >
+                          {product.inStock ? (
+                            <>
+                              <Check className="w-4 h-4" />
+                              En stock
+                            </>
+                          ) : (
+                            <>
+                              <X className="w-4 h-4" />
+                              Rupture
+                            </>
+                          )}
+                        </button>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => handleEdit(product)}
+                            className="p-2 text-stone-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                            title="Modifier"
+                          >
+                            <Edit className="w-5 h-5" />
+                          </button>
+                          {deleteConfirm === product.id ? (
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleDelete(product.id)}
+                                className="p-2 text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
+                                title="Confirmer"
+                              >
+                                <Check className="w-5 h-5" />
+                              </button>
+                              <button
+                                onClick={() => setDeleteConfirm(null)}
+                                className="p-2 text-stone-500 hover:bg-stone-100 rounded-lg transition-colors"
+                                title="Annuler"
+                              >
+                                <X className="w-5 h-5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setDeleteConfirm(product.id)}
+                              className="p-2 text-stone-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Supprimer"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          )}
-        </div>
+
+            {filteredProducts.length === 0 && (
+              <div className="text-center py-12">
+                <Package className="w-12 h-12 text-stone-300 mx-auto mb-3" />
+                <p className="text-stone-500">Aucun produit trouvé</p>
+              </div>
+            )}
+          </div>
+        )}
       </main>
 
       {/* Product Form Modal */}
@@ -546,6 +583,7 @@ function AdminDashboard() {
               setShowForm(false);
               setEditingProduct(undefined);
             }}
+            isLoading={isLoading}
           />
         )}
       </AnimatePresence>
@@ -572,4 +610,3 @@ export default function AdminPage() {
 
   return isAuthenticated ? <AdminDashboard /> : <LoginForm />;
 }
-

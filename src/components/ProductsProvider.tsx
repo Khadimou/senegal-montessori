@@ -4,12 +4,11 @@ import { useEffect } from 'react';
 import { useProductsStore } from '@/store/products';
 
 export default function ProductsProvider({ children }: { children: React.ReactNode }) {
-  const { initializeProducts } = useProductsStore();
+  const { fetchProducts } = useProductsStore();
 
   useEffect(() => {
-    initializeProducts();
-  }, [initializeProducts]);
+    fetchProducts();
+  }, [fetchProducts]);
 
   return <>{children}</>;
 }
-
