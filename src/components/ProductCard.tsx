@@ -1,0 +1,111 @@
+'use client';
+
+import Image from 'next/image';
+import Link from 'next/link';
+import { motion } from 'framer-motion';
+import { ShoppingBag, Eye } from 'lucide-react';
+import { Product } from '@/types';
+import { formatPrice } from '@/data/products';
+import { useCartStore } from '@/store/cart';
+
+interface ProductCardProps {
+  product: Product;
+  index?: number;
+}
+
+export default function ProductCard({ product, index = 0 }: ProductCardProps) {
+  const { addItem, openCart } = useCartStore();
+
+  const handleAddToCart = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (product.inStock) {
+      addItem(product);
+      openCart();
+    }
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, delay: index * 0.1 }}
+      className="group"
+    >
+      <Link href={`/produits/${product.id}`} className="block">
+        <div className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-stone-100">
+          {/* Image */}
+          <div className="relative aspect-square overflow-hidden bg-stone-100">
+            <Image
+              src={product.image}
+              alt={product.name}
+              fill
+              className="object-cover group-hover:scale-110 transition-transform duration-500"
+            />
+            
+            {/* Badges */}
+            <div className="absolute top-4 left-4 flex flex-col gap-2">
+              {!product.inStock && (
+                <span className="px-3 py-1 bg-stone-800 text-white text-xs font-medium rounded-full">
+                  Rupture de stock
+                </span>
+              )}
+              <span className="px-3 py-1 bg-amber-500 text-white text-xs font-medium rounded-full">
+                {product.ageRange}
+              </span>
+            </div>
+
+            {/* Quick Actions */}
+            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">
+              <motion.button
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleAddToCart}
+                disabled={!product.inStock}
+                className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-amber-600 hover:bg-amber-500 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                aria-label="Ajouter au panier"
+              >
+                <ShoppingBag className="w-5 h-5" />
+              </motion.button>
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+                className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-stone-600 hover:bg-stone-800 hover:text-white transition-colors"
+              >
+                <Eye className="w-5 h-5" />
+              </motion.div>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="p-5">
+            <span className="text-xs font-medium text-amber-600 uppercase tracking-wider">
+              {product.category.replace('-', ' ')}
+            </span>
+            <h3 className="mt-2 text-lg font-semibold text-stone-800 group-hover:text-amber-600 transition-colors line-clamp-2">
+              {product.name}
+            </h3>
+            <p className="mt-2 text-stone-500 text-sm line-clamp-2">
+              {product.description}
+            </p>
+            <div className="mt-4 flex items-center justify-between">
+              <span className="text-xl font-bold text-amber-600">
+                {formatPrice(product.price)}
+              </span>
+              {product.inStock ? (
+                <span className="text-xs text-emerald-600 font-medium bg-emerald-50 px-2 py-1 rounded-full">
+                  En stock
+                </span>
+              ) : (
+                <span className="text-xs text-stone-500 font-medium bg-stone-100 px-2 py-1 rounded-full">
+                  Indisponible
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </Link>
+    </motion.div>
+  );
+}
+

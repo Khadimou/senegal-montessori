@@ -1,36 +1,95 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# 🧸 Montessori Sénégal
 
-## Getting Started
+Boutique e-commerce de jouets éducatifs Montessori au Sénégal.
 
-First, run the development server:
+![Next.js](https://img.shields.io/badge/Next.js-15-black?style=flat-square&logo=next.js)
+![TypeScript](https://img.shields.io/badge/TypeScript-5-blue?style=flat-square&logo=typescript)
+![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38B2AC?style=flat-square&logo=tailwind-css)
+
+## 🌟 Fonctionnalités
+
+- **Catalogue produits** - Navigation par catégories (Vie Pratique, Sensoriel, Langage, Mathématiques, Culture)
+- **Panier d'achat** - Gestion complète avec persistence locale
+- **Design responsive** - Optimisé mobile et desktop
+- **Animations fluides** - Avec Framer Motion
+- **SEO optimisé** - Métadonnées et Open Graph
+
+## 🚀 Technologies
+
+- **Framework**: [Next.js 15](https://nextjs.org/) avec App Router
+- **Language**: [TypeScript](https://www.typescriptlang.org/)
+- **Styling**: [Tailwind CSS 4](https://tailwindcss.com/)
+- **État**: [Zustand](https://zustand-demo.pmnd.rs/)
+- **Animations**: [Framer Motion](https://www.framer.com/motion/)
+- **Icônes**: [Lucide React](https://lucide.dev/)
+
+## 📦 Installation
 
 ```bash
+# Cloner le repo
+git clone https://github.com/Khadimou/senegal-montessori.git
+
+# Aller dans le dossier
+cd senegal-montessori
+
+# Installer les dépendances
+npm install
+
+# Lancer en développement
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Ouvrir [http://localhost:3000](http://localhost:3000) dans votre navigateur.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 🌐 Déploiement Vercel
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/Khadimou/senegal-montessori)
 
-## Learn More
+Ou via CLI:
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+# Installer Vercel CLI
+npm i -g vercel
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+# Déployer
+vercel
+```
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📁 Structure du Projet
 
-## Deploy on Vercel
+```
+src/
+├── app/                    # Pages Next.js (App Router)
+│   ├── page.tsx           # Page d'accueil
+│   ├── produits/          # Pages produits
+│   ├── panier/            # Page panier
+│   ├── contact/           # Page contact
+│   └── a-propos/          # Page à propos
+├── components/            # Composants React
+│   ├── Header.tsx
+│   ├── Footer.tsx
+│   ├── Hero.tsx
+│   ├── ProductCard.tsx
+│   └── CartSlider.tsx
+├── data/                  # Données statiques
+│   └── products.ts
+├── store/                 # État global (Zustand)
+│   └── cart.ts
+└── types/                 # Types TypeScript
+    └── index.ts
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🎨 Personnalisation
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### Couleurs
+Les couleurs principales utilisent la palette Tailwind `amber` et `orange`. Modifiez `tailwind.config.ts` pour personnaliser.
+
+### Produits
+Ajoutez ou modifiez les produits dans `src/data/products.ts`.
+
+### Images
+Les images utilisent Unsplash. Remplacez par vos propres images en mettant à jour les URLs dans `products.ts`.
+
+## 📄 Licence
+
+MIT © 2024 Montessori Sénégal
