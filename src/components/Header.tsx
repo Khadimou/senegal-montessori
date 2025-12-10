@@ -1,15 +1,21 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ShoppingBag, Menu, X, Leaf } from 'lucide-react';
 import { useCartStore } from '@/store/cart';
 import CartSlider from './CartSlider';
 
 export default function Header() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { getTotalItems, openCart } = useCartStore();
-  const totalItems = getTotalItems();
+  
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+  
+  const totalItems = mounted ? getTotalItems() : 0;
 
   const navLinks = [
     { href: '/', label: 'Accueil' },
@@ -60,7 +66,7 @@ export default function Header() {
                 aria-label="Ouvrir le panier"
               >
                 <ShoppingBag className="w-6 h-6 text-amber-700 group-hover:scale-110 transition-transform" />
-                {totalItems > 0 && (
+                {mounted && totalItems > 0 && (
                   <span className="absolute -top-1 -right-1 w-6 h-6 bg-orange-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-bounce">
                     {totalItems}
                   </span>

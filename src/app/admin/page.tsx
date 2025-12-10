@@ -577,11 +577,17 @@ function AdminDashboard() {
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-4">
                           <div className="w-14 h-14 rounded-xl overflow-hidden bg-stone-100 flex-shrink-0">
-                            <img
-                              src={product.images?.[0] || product.image}
-                              alt={product.name}
-                              className="w-full h-full object-cover"
-                            />
+                            {(product.images?.[0] || product.image) ? (
+                              <img
+                                src={product.images?.[0] || product.image}
+                                alt={product.name}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center text-stone-400">
+                                <Package className="w-6 h-6" />
+                              </div>
+                            )}
                           </div>
                           <div>
                             <p className="font-medium text-stone-800">{product.name}</p>
