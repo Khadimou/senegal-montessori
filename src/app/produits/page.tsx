@@ -1,17 +1,22 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Search, SlidersHorizontal, X } from 'lucide-react';
+import { Search, SlidersHorizontal, X, Loader2 } from 'lucide-react';
 import ProductCard from '@/components/ProductCard';
 import { useProductsStore } from '@/store/products';
 import { categories } from '@/data/products';
 
 export default function ProductsPage() {
-  const { products } = useProductsStore();
+  const { products, isLoading, fetchProducts } = useProductsStore();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [showFilters, setShowFilters] = useState(false);
+
+  // Recharger les produits au montage
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
 
   const filteredProducts = useMemo(() => {
     return products.filter((product) => {
@@ -140,39 +145,49 @@ export default function ProductsPage() {
               </div>
             )}
 
-            {/* Results Count */}
-            <p className="text-stone-500 mb-6">
-              {filteredProducts.length} produit{filteredProducts.length !== 1 ? 's' : ''} trouvé{filteredProducts.length !== 1 ? 's' : ''}
-            </p>
-
-            {/* Products */}
-            {filteredProducts.length > 0 ? (
-              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
-                {filteredProducts.map((product, index) => (
-                  <ProductCard key={product.id} product={product} index={index} />
-                ))}
+            {/* Loading State */}
+            {isLoading && products.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16">
+                <Loader2 className="w-12 h-12 text-amber-500 animate-spin mb-4" />
+                <p className="text-stone-500">Chargement des produits...</p>
               </div>
             ) : (
-              <div className="text-center py-16">
-                <div className="w-24 h-24 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <Search className="w-12 h-12 text-stone-300" />
-                </div>
-                <h3 className="text-xl font-semibold text-stone-700 mb-2">
-                  Aucun produit trouvé
-                </h3>
+              <>
+                {/* Results Count */}
                 <p className="text-stone-500 mb-6">
-                  Essayez de modifier vos critères de recherche
+                  {filteredProducts.length} produit{filteredProducts.length !== 1 ? 's' : ''} trouvé{filteredProducts.length !== 1 ? 's' : ''}
                 </p>
-                <button
-                  onClick={() => {
-                    setSearchQuery('');
-                    setSelectedCategory(null);
-                  }}
-                  className="px-6 py-3 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 transition-colors"
-                >
-                  Réinitialiser les filtres
-                </button>
-              </div>
+
+                {/* Products */}
+                {filteredProducts.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
+                    {filteredProducts.map((product, index) => (
+                      <ProductCard key={product.id} product={product} index={index} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-16">
+                    <div className="w-24 h-24 bg-stone-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Search className="w-12 h-12 text-stone-300" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-stone-700 mb-2">
+                      Aucun produit trouvé
+                    </h3>
+                    <p className="text-stone-500 mb-6">
+                      Essayez de modifier vos critères de recherche
+                    </p>
+                    <button
+                      onClick={() => {
+                        setSearchQuery('');
+                        setSelectedCategory(null);
+                      }}
+                      className="px-6 py-3 bg-amber-500 text-white rounded-xl font-medium hover:bg-amber-600 transition-colors"
+                    >
+                      Réinitialiser les filtres
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </div>

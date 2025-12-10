@@ -1,11 +1,13 @@
 import { create } from 'zustand';
 import { Product } from '@/types';
 import { supabase, DbProduct } from '@/lib/supabase';
+import { products as staticProducts } from '@/data/products';
 
 interface ProductsState {
   products: Product[];
   isLoading: boolean;
   error: string | null;
+  lastFetch: number | null;
   fetchProducts: () => Promise<void>;
   addProduct: (product: Omit<Product, 'id' | 'image'>) => Promise<void>;
   updateProduct: (id: string, updates: Partial<Omit<Product, 'image'>>) => Promise<void>;
@@ -20,12 +22,20 @@ const dbToProduct = (db: DbProduct): Product => ({
   description: db.description,
   price: db.price,
   images: db.images || [],
-  image: db.images?.[0] || '',  // Première image comme image principale
+  image: db.images?.[0] || '',
   category: db.category,
   ageRange: db.age_range,
   inStock: db.in_stock,
   features: db.features || [],
 });
+
+// Convertir les produits statiques vers le nouveau format avec images array
+const convertStaticProducts = (): Product[] => {
+  return staticProducts.map(p => ({
+    ...p,
+    images: p.image ? [p.image] : [],
+  }));
+};
 
 // Convertir du format App vers le format DB
 const productToDb = (product: Omit<Product, 'id' | 'image'>) => ({
@@ -43,22 +53,53 @@ export const useProductsStore = create<ProductsState>((set, get) => ({
   products: [],
   isLoading: false,
   error: null,
+  lastFetch: null,
 
   fetchProducts: async () => {
+    // Éviter les appels multiples en parallèle
+    if (get().isLoading) return;
+    
     set({ isLoading: true, error: null });
+    
     try {
       const { data, error } = await supabase
         .from('products')
         .select('*')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
+      if (error) {
+        console.error('Supabase error:', error);
+        // Fallback vers les données statiques si erreur Supabase
+        set({ 
+          products: convertStaticProducts(), 
+          isLoading: false,
+          error: 'Mode hors-ligne: données locales',
+          lastFetch: Date.now()
+        });
+        return;
+      }
 
-      const products = (data || []).map(dbToProduct);
-      set({ products, isLoading: false });
+      if (data && data.length > 0) {
+        const products = data.map(dbToProduct);
+        set({ products, isLoading: false, lastFetch: Date.now() });
+      } else {
+        // Si Supabase est vide, utiliser les données statiques
+        console.log('Supabase vide, utilisation des données statiques');
+        set({ 
+          products: convertStaticProducts(), 
+          isLoading: false,
+          lastFetch: Date.now()
+        });
+      }
     } catch (error) {
       console.error('Erreur lors du chargement des produits:', error);
-      set({ error: 'Erreur lors du chargement des produits', isLoading: false });
+      // Fallback vers les données statiques
+      set({ 
+        products: convertStaticProducts(), 
+        isLoading: false,
+        error: 'Mode hors-ligne: données locales',
+        lastFetch: Date.now()
+      });
     }
   },
 

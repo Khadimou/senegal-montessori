@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { ArrowRight, BookOpen, Heart, Users, Sparkles } from 'lucide-react';
@@ -9,7 +10,12 @@ import { useProductsStore } from '@/store/products';
 import { categories } from '@/data/products';
 
 export default function HomePage() {
-  const { products } = useProductsStore();
+  const { products, fetchProducts } = useProductsStore();
+  
+  useEffect(() => {
+    fetchProducts();
+  }, [fetchProducts]);
+  
   const featuredProducts = products.slice(0, 4);
 
   return (
