@@ -123,18 +123,18 @@ export async function POST(request: NextRequest) {
     await supabase
       .from('orders')
       .update({
-        naboopay_transaction_id: nabooResponse.transaction.id,
+        naboopay_transaction_id: nabooResponse.order_id,
       })
       .eq('id', order.id);
 
-    console.log(`[Checkout] Commande ${order.id} créée, transaction NabooPay: ${nabooResponse.transaction.id}`);
+    console.log(`[Checkout] Commande ${order.id} créée, transaction NabooPay: ${nabooResponse.order_id}`);
 
     // 4. Retourner l'URL de paiement
     return NextResponse.json({
       success: true,
       order_id: order.id,
       checkout_url: nabooResponse.checkout_url,
-      transaction_id: nabooResponse.transaction.id,
+      transaction_id: nabooResponse.order_id,
     });
 
   } catch (error) {

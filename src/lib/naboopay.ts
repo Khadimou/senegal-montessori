@@ -25,16 +25,25 @@ export interface CreateTransactionRequest {
 }
 
 export interface NabooTransaction {
-  id: string;
-  checkout_url: string;
+  order_id: string;
+  method_of_payment: PaymentMethod[];
   amount: number;
-  status: 'pending' | 'paid' | 'done' | 'part_paid' | 'failed';
+  amount_to_pay: number;
+  currency: string;
+  transaction_status: 'pending' | 'paid' | 'done' | 'part_paid' | 'failed';
+  is_escrow: boolean;
+  is_merchant: boolean;
+  checkout_url: string;
   created_at: string;
 }
 
 export interface CreateTransactionResponse {
-  transaction: NabooTransaction;
+  order_id: string;
   checkout_url: string;
+  amount: number;
+  amount_to_pay: number;
+  transaction_status: string;
+  created_at: string;
 }
 
 export interface WebhookPayload {
@@ -128,10 +137,10 @@ class NabooPayClient {
   /**
    * Récupère les détails d'une transaction
    */
-  async getTransaction(transactionId: string): Promise<NabooTransaction> {
+  async getTransaction(orderId: string): Promise<NabooTransaction> {
     return this.request<NabooTransaction>(
       'GET',
-      `/transaction/${transactionId}`
+      `/transaction/${orderId}`
     );
   }
 
@@ -142,7 +151,7 @@ class NabooPayClient {
     status?: string;
     from_date?: string;
     to_date?: string;
-  }): Promise<NabooTransaction[]> {
+  }): Promise<{ transactions: NabooTransaction[] }> {
     let endpoint = '/transaction/get-transactions';
     
     if (params) {
@@ -157,7 +166,7 @@ class NabooPayClient {
       }
     }
 
-    return this.request<NabooTransaction[]>('GET', endpoint);
+    return this.request<{ transactions: NabooTransaction[] }>('GET', endpoint);
   }
 
   /**
