@@ -78,10 +78,8 @@ export default function CheckoutPage() {
 
   const subtotal = getTotalPrice();
   const shipping = subtotal > 50000 ? 0 : 3000;
+  // Les frais NabooPay sont déjà inclus dans les prix des produits
   const total = subtotal + shipping;
-  
-  // Estimation des frais NabooPay (~2% du montant)
-  const estimatedFees = Math.ceil(total * 0.02);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -336,10 +334,10 @@ export default function CheckoutPage() {
                     <span className="text-amber-600">{formatPrice(total)}</span>
                   </div>
                   
-                  {/* Information frais */}
-                  <div className="mt-3 p-3 bg-amber-50 border border-amber-100 rounded-lg">
-                    <p className="text-xs text-amber-800">
-                      ℹ️ <strong>Frais de paiement :</strong> Des frais de transaction d'environ {formatPrice(estimatedFees)} seront appliqués par le service de paiement.
+                  {/* Information frais inclus */}
+                  <div className="mt-3 p-3 bg-green-50 border border-green-100 rounded-lg">
+                    <p className="text-xs text-green-800">
+                      ✅ <strong>Frais de paiement inclus</strong> - Aucun frais supplémentaire ne sera appliqué
                     </p>
                   </div>
                 </div>

@@ -39,7 +39,7 @@ export const products: Product[] = [
     id: 'cadre-habillage-boutons',
     name: 'Cadre d\'Habillage - Boutons',
     description: 'Ce cadre d\'habillage Montessori permet à l\'enfant d\'apprendre à boutonner et déboutonner de manière autonome. Fabriqué en bois de qualité avec du tissu doux.',
-    price: 15000,
+    price: 15400, // Prix avec frais inclus (+2.5%)
     image: 'https://images.unsplash.com/photo-1560859251-d563a49c5e4a?w=400&h=400&fit=crop',
     images: ['https://images.unsplash.com/photo-1560859251-d563a49c5e4a?w=400&h=400&fit=crop'],
     category: 'vie-pratique',
@@ -51,7 +51,7 @@ export const products: Product[] = [
     id: 'plateau-versement',
     name: 'Plateau de Versement',
     description: 'Ensemble complet pour les exercices de versement avec deux pichets en céramique et un plateau en bois. Parfait pour développer la coordination œil-main.',
-    price: 12000,
+    price: 12300, // Prix avec frais inclus (+2.5%)
     image: 'https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&h=400&fit=crop',
     images: ['https://images.unsplash.com/photo-1515488042361-ee00e0ddd4e4?w=400&h=400&fit=crop'],
     category: 'vie-pratique',
@@ -63,7 +63,7 @@ export const products: Product[] = [
     id: 'kit-nettoyage-enfant',
     name: 'Kit de Nettoyage Enfant',
     description: 'Set complet de nettoyage adapté à la taille des enfants : balai, pelle, brosse et support. Encourage la participation aux tâches ménagères.',
-    price: 18000,
+    price: 18450, // Prix avec frais inclus (+2.5%)
     image: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=400&h=400&fit=crop',
     images: ['https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=400&h=400&fit=crop'],
     category: 'vie-pratique',
@@ -77,7 +77,7 @@ export const products: Product[] = [
     id: 'tour-rose',
     name: 'Tour Rose Montessori',
     description: 'La célèbre tour rose Montessori composée de 10 cubes en bois de tailles graduées. Permet de développer la discrimination visuelle des dimensions.',
-    price: 35000,
+    price: 35875, // Prix avec frais inclus (+2.5%)
     image: 'https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=400&h=400&fit=crop',
     images: ['https://images.unsplash.com/photo-1587654780291-39c9404d746b?w=400&h=400&fit=crop'],
     category: 'sensoriel',
@@ -89,7 +89,7 @@ export const products: Product[] = [
     id: 'cylindres-couleurs',
     name: 'Boîtes de Cylindres Colorés',
     description: 'Ensemble de 4 boîtes contenant des cylindres de différentes tailles. L\'enfant apprend à discriminer les dimensions par le toucher et la vue.',
-    price: 45000,
+    price: 46125, // Prix avec frais inclus (+2.5%)
     image: 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?w=400&h=400&fit=crop',
     images: ['https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?w=400&h=400&fit=crop'],
     category: 'sensoriel',
@@ -101,7 +101,7 @@ export const products: Product[] = [
     id: 'tablettes-couleurs',
     name: 'Tablettes de Couleurs - Boîte 3',
     description: 'Boîte contenant 63 tablettes de couleurs avec 9 nuances de 7 couleurs différentes. Affine la perception des couleurs et leur gradation.',
-    price: 28000,
+    price: 28700, // Prix avec frais inclus (+2.5%)
     image: 'https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400&h=400&fit=crop',
     images: ['https://images.unsplash.com/photo-1513364776144-60967b0f800f?w=400&h=400&fit=crop'],
     category: 'sensoriel',
@@ -115,7 +115,7 @@ export const products: Product[] = [
     id: 'lettres-rugueuses',
     name: 'Lettres Rugueuses Cursives',
     description: 'Ensemble complet de lettres rugueuses en cursive sur plaques de bois. L\'enfant trace les lettres du bout des doigts pour mémoriser leur forme.',
-    price: 32000,
+    price: 32800, // Prix avec frais inclus (+2.5%)
     image: 'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400&h=400&fit=crop',
     images: ['https://images.unsplash.com/photo-1503676260728-1c00da094a0b?w=400&h=400&fit=crop'],
     category: 'langage',
@@ -127,7 +127,7 @@ export const products: Product[] = [
     id: 'alphabet-mobile',
     name: 'Alphabet Mobile',
     description: 'Grand alphabet mobile avec plusieurs exemplaires de chaque lettre en bois. Permet à l\'enfant de composer ses premiers mots avant de savoir écrire.',
-    price: 38000,
+    price: 38950, // Prix avec frais inclus (+2.5%)
     image: 'https://images.unsplash.com/photo-1452457750107-cd084dce177d?w=400&h=400&fit=crop',
     images: ['https://images.unsplash.com/photo-1452457750107-cd084dce177d?w=400&h=400&fit=crop'],
     category: 'langage',
@@ -139,7 +139,7 @@ export const products: Product[] = [
     id: 'imagier-phonetique',
     name: 'Imagier Phonétique',
     description: 'Collection de cartes illustrées classées par son initial. Aide l\'enfant à associer les sons aux images et développe le vocabulaire.',
-    price: 22000,
+    price: 22550, // Prix avec frais inclus (+2.5%)
     image: 'https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400&h=400&fit=crop',
     images: ['https://images.unsplash.com/photo-1456513080510-7bf3a84b82f8?w=400&h=400&fit=crop'],
     category: 'langage',
@@ -153,7 +153,7 @@ export const products: Product[] = [
     id: 'barres-rouges-bleues',
     name: 'Barres Rouges et Bleues',
     description: 'Ensemble de 10 barres segmentées en rouge et bleu pour apprendre à compter de 1 à 10. Introduction concrète aux quantités et aux nombres.',
-    price: 42000,
+    price: 43050, // Prix avec frais inclus (+2.5%)
     image: 'https://images.unsplash.com/photo-1509228468518-180dd4864904?w=400&h=400&fit=crop',
     images: ['https://images.unsplash.com/photo-1509228468518-180dd4864904?w=400&h=400&fit=crop'],
     category: 'mathematiques',
@@ -165,7 +165,7 @@ export const products: Product[] = [
     id: 'chiffres-rugueux',
     name: 'Chiffres Rugueux 0-9',
     description: 'Plaques en bois avec chiffres rugueux de 0 à 9. L\'enfant trace les chiffres du bout des doigts pour mémoriser leur tracé.',
-    price: 18000,
+    price: 18450, // Prix avec frais inclus (+2.5%)
     image: 'https://images.unsplash.com/photo-1596495577886-d920f1fb7238?w=400&h=400&fit=crop',
     images: ['https://images.unsplash.com/photo-1596495577886-d920f1fb7238?w=400&h=400&fit=crop'],
     category: 'mathematiques',
@@ -177,7 +177,7 @@ export const products: Product[] = [
     id: 'perles-dorees',
     name: 'Système Décimal - Perles Dorées',
     description: 'Matériel complet pour comprendre le système décimal : unités, dizaines, centaines et milliers représentés par des perles dorées.',
-    price: 65000,
+    price: 66625, // Prix avec frais inclus (+2.5%)
     image: 'https://images.unsplash.com/photo-1509228627152-72ae9ae6848d?w=400&h=400&fit=crop',
     images: ['https://images.unsplash.com/photo-1509228627152-72ae9ae6848d?w=400&h=400&fit=crop'],
     category: 'mathematiques',
@@ -191,7 +191,7 @@ export const products: Product[] = [
     id: 'puzzle-afrique',
     name: 'Puzzle Carte de l\'Afrique',
     description: 'Puzzle en bois représentant les pays d\'Afrique avec pièces individuelles pour chaque pays. Idéal pour découvrir notre continent.',
-    price: 28000,
+    price: 28700, // Prix avec frais inclus (+2.5%)
     image: 'https://images.unsplash.com/photo-1547891654-e66ed7ebb968?w=400&h=400&fit=crop',
     images: ['https://images.unsplash.com/photo-1547891654-e66ed7ebb968?w=400&h=400&fit=crop'],
     category: 'culture',
@@ -203,7 +203,7 @@ export const products: Product[] = [
     id: 'globe-rugueux',
     name: 'Globe Terrestre Rugueux',
     description: 'Globe avec surfaces rugueuses pour les terres et lisses pour les océans. Premier contact sensoriel avec la géographie mondiale.',
-    price: 35000,
+    price: 35875, // Prix avec frais inclus (+2.5%)
     image: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=400&h=400&fit=crop',
     images: ['https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=400&h=400&fit=crop'],
     category: 'culture',
@@ -215,7 +215,7 @@ export const products: Product[] = [
     id: 'cabinet-botanique',
     name: 'Cabinet de Botanique',
     description: 'Cabinet contenant des formes de feuilles en bois avec cadres d\'encastrement. L\'enfant découvre les différentes formes de feuilles.',
-    price: 48000,
+    price: 49200, // Prix avec frais inclus (+2.5%)
     image: 'https://images.unsplash.com/photo-1446071103084-c257b5f70672?w=400&h=400&fit=crop',
     images: ['https://images.unsplash.com/photo-1446071103084-c257b5f70672?w=400&h=400&fit=crop'],
     category: 'culture',
