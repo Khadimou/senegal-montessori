@@ -79,6 +79,9 @@ export default function CheckoutPage() {
   const subtotal = getTotalPrice();
   const shipping = subtotal > 50000 ? 0 : 3000;
   const total = subtotal + shipping;
+  
+  // Estimation des frais NabooPay (~2% du montant)
+  const estimatedFees = Math.ceil(total * 0.02);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -332,6 +335,13 @@ export default function CheckoutPage() {
                     <span>Total</span>
                     <span className="text-amber-600">{formatPrice(total)}</span>
                   </div>
+                  
+                  {/* Information frais */}
+                  <div className="mt-3 p-3 bg-amber-50 border border-amber-100 rounded-lg">
+                    <p className="text-xs text-amber-800">
+                      ℹ️ <strong>Frais de paiement :</strong> Des frais de transaction d'environ {formatPrice(estimatedFees)} seront appliqués par le service de paiement.
+                    </p>
+                  </div>
                 </div>
 
                 {/* Bouton payer */}
@@ -353,9 +363,14 @@ export default function CheckoutPage() {
                   )}
                 </button>
 
-                <p className="mt-4 text-xs text-stone-500 text-center">
-                  🔒 Paiement sécurisé par NabooPay
-                </p>
+                <div className="mt-4 space-y-2">
+                  <p className="text-xs text-stone-500 text-center">
+                    🔒 Paiement sécurisé par NabooPay
+                  </p>
+                  <p className="text-xs text-stone-400 text-center">
+                    Vos informations seront confirmées sur la page de paiement pour votre sécurité
+                  </p>
+                </div>
               </motion.div>
             </div>
           </div>
