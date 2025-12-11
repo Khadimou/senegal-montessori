@@ -36,12 +36,18 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
         <div className="bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-stone-100">
           {/* Image */}
           <div className="relative aspect-square overflow-hidden bg-stone-100">
-            <Image
-              src={product.image}
-              alt={product.name}
-              fill
-              className="object-cover group-hover:scale-110 transition-transform duration-500"
-            />
+            {product.images?.[0] ? (
+              <Image
+                src={product.images[0]}
+                alt={product.name}
+                fill
+                className="object-cover group-hover:scale-110 transition-transform duration-500"
+              />
+            ) : (
+              <div className="w-full h-full bg-stone-200 flex items-center justify-center">
+                <ShoppingBag className="w-16 h-16 text-stone-400" />
+              </div>
+            )}
             
             {/* Badges */}
             <div className="absolute top-4 left-4 flex flex-col gap-2">
