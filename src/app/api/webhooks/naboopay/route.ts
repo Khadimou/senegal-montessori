@@ -2,11 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
 
 interface WebhookPayload {
-  transaction_id: string;
-  status: 'pending' | 'paid' | 'done' | 'part_paid' | 'failed';
+  order_id: string;
+  transaction_status: 'pending' | 'paid' | 'done' | 'part_paid' | 'failed';
   amount: number;
+  amount_to_pay?: number;
   payment_method?: string;
-  paid_at?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -15,9 +17,9 @@ export async function POST(request: NextRequest) {
     
     console.log('[Webhook NabooPay] Reçu:', JSON.stringify(payload, null, 2));
 
-    const { transaction_id, status } = payload;
+    const { order_id, transaction_status } = payload;
 
-    if (!transaction_id || !status) {
+    if (!order_id || !transaction_status) {
       console.error('[Webhook] Payload invalide');
       return NextResponse.json(
         { error: 'Payload invalide' },
@@ -34,17 +36,17 @@ export async function POST(request: NextRequest) {
       'failed': 'cancelled',
     };
 
-    const orderStatus = orderStatusMap[status] || 'pending';
+    const orderStatus = orderStatusMap[transaction_status] || 'pending';
 
     // Mettre à jour la commande dans Supabase
     const { data: order, error: findError } = await supabase
       .from('orders')
       .select('*')
-      .eq('naboopay_transaction_id', transaction_id)
+      .eq('naboopay_transaction_id', order_id)
       .single();
 
     if (findError || !order) {
-      console.error('[Webhook] Commande non trouvée pour transaction:', transaction_id);
+      console.error('[Webhook] Commande non trouvée pour transaction:', order_id);
       return NextResponse.json(
         { error: 'Commande non trouvée' },
         { status: 404 }
@@ -56,7 +58,7 @@ export async function POST(request: NextRequest) {
       .from('orders')
       .update({
         status: orderStatus,
-        payment_status: status,
+        payment_status: transaction_status,
         updated_at: new Date().toISOString(),
       })
       .eq('id', order.id);
@@ -69,7 +71,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.log(`[Webhook] Commande ${order.id} mise à jour: ${status} -> ${orderStatus}`);
+    console.log(`[Webhook] Commande ${order.id} mise à jour: ${transaction_status} -> ${orderStatus}`);
 
     // Ici vous pouvez ajouter :
     // - Envoi d'email de confirmation
