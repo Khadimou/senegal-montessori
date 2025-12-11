@@ -27,6 +27,12 @@ const dbToProduct = (db: DbProduct): Product => ({
   ageRange: db.age_range,
   inStock: db.in_stock,
   features: db.features || [],
+  // Champs financiers
+  costPrice: db.cost_price || 0,
+  stockQuantity: db.stock_quantity || 0,
+  minStockAlert: db.min_stock_alert || 5,
+  supplier: db.supplier,
+  totalSold: db.total_sold || 0,
 });
 
 // Convertir les produits statiques vers le nouveau format avec images array
@@ -47,6 +53,11 @@ const productToDb = (product: Omit<Product, 'id' | 'image'>) => ({
   age_range: product.ageRange,
   in_stock: product.inStock,
   features: product.features,
+  // Champs financiers
+  cost_price: product.costPrice || 0,
+  stock_quantity: product.stockQuantity || 0,
+  min_stock_alert: product.minStockAlert || 5,
+  supplier: product.supplier || null,
 });
 
 export const useProductsStore = create<ProductsState>((set, get) => ({
@@ -137,6 +148,11 @@ export const useProductsStore = create<ProductsState>((set, get) => ({
       if (updates.ageRange !== undefined) dbUpdates.age_range = updates.ageRange;
       if (updates.inStock !== undefined) dbUpdates.in_stock = updates.inStock;
       if (updates.features !== undefined) dbUpdates.features = updates.features;
+      // Champs financiers
+      if (updates.costPrice !== undefined) dbUpdates.cost_price = updates.costPrice;
+      if (updates.stockQuantity !== undefined) dbUpdates.stock_quantity = updates.stockQuantity;
+      if (updates.minStockAlert !== undefined) dbUpdates.min_stock_alert = updates.minStockAlert;
+      if (updates.supplier !== undefined) dbUpdates.supplier = updates.supplier;
 
       const { error } = await supabase
         .from('products')

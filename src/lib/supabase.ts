@@ -16,6 +16,40 @@ export interface DbProduct {
   age_range: string;
   in_stock: boolean;
   features: string[];
+  // Champs financiers
+  cost_price?: number;
+  stock_quantity?: number;
+  min_stock_alert?: number;
+  supplier?: string;
+  total_sold?: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DbExpense {
+  id: string;
+  product_id?: string;
+  category: string;
+  description: string;
+  amount: number;
+  quantity?: number;
+  supplier?: string;
+  receipt_url?: string;
+  expense_date: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface DbFinancialGoal {
+  id: string;
+  name: string;
+  target_amount: number;
+  current_amount: number;
+  goal_type: string;
+  period: string;
+  start_date: string;
+  end_date: string;
+  is_active: boolean;
   created_at: string;
   updated_at: string;
 }

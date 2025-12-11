@@ -25,13 +25,25 @@ import {
   Phone,
   MapPin,
   CreditCard,
-  FileText
+  FileText,
+  TrendingUp,
+  TrendingDown,
+  DollarSign,
+  PieChart,
+  BarChart3,
+  Target,
+  AlertTriangle,
+  Receipt,
+  Wallet,
+  ArrowUpRight,
+  ArrowDownRight
 } from 'lucide-react';
 import { useAdminStore } from '@/store/admin';
 import { useProductsStore } from '@/store/products';
 import { useOrdersStore } from '@/store/orders';
+import { useFinancesStore } from '@/store/finances';
 import { categories, formatPrice } from '@/data/products';
-import { Product, Order, OrderStatus } from '@/types';
+import { Product, Order, OrderStatus, Expense, ExpenseCategory } from '@/types';
 
 // Composant Login
 function LoginForm() {
@@ -235,6 +247,11 @@ function ProductForm({
     ageRange: product?.ageRange || '3-6 ans',
     inStock: product?.inStock ?? true,
     features: product?.features?.join(', ') || '',
+    // Champs financiers
+    costPrice: product?.costPrice || 0,
+    stockQuantity: product?.stockQuantity || 0,
+    minStockAlert: product?.minStockAlert || 5,
+    supplier: product?.supplier || '',
   });
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -252,6 +269,11 @@ function ProductForm({
       ageRange: formData.ageRange,
       inStock: formData.inStock,
       features: formData.features.split(',').map(f => f.trim()).filter(f => f),
+      // Champs financiers
+      costPrice: Number(formData.costPrice),
+      stockQuantity: Number(formData.stockQuantity),
+      minStockAlert: Number(formData.minStockAlert),
+      supplier: formData.supplier || undefined,
     });
   };
 
@@ -360,6 +382,71 @@ function ProductForm({
               >
                 {formData.inStock ? '✓ En stock' : '✗ Rupture de stock'}
               </button>
+            </div>
+
+            {/* Séparateur Section Finances */}
+            <div className="md:col-span-2 border-t border-stone-200 pt-4 mt-2">
+              <h3 className="text-sm font-semibold text-stone-600 flex items-center gap-2 mb-4">
+                <DollarSign className="w-4 h-4" />
+                Informations financières
+              </h3>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-2">
+                Prix d&apos;achat (FCFA)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={formData.costPrice}
+                onChange={(e) => setFormData({ ...formData, costPrice: Number(e.target.value) })}
+                className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                placeholder="25000"
+              />
+              <p className="text-xs text-stone-500 mt-1">Coût d&apos;achat ou de fabrication</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-2">
+                Quantité en stock
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={formData.stockQuantity}
+                onChange={(e) => setFormData({ ...formData, stockQuantity: Number(e.target.value) })}
+                className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                placeholder="10"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-2">
+                Seuil d&apos;alerte stock
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={formData.minStockAlert}
+                onChange={(e) => setFormData({ ...formData, minStockAlert: Number(e.target.value) })}
+                className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                placeholder="5"
+              />
+              <p className="text-xs text-stone-500 mt-1">Alerte quand le stock descend en dessous</p>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-2">
+                Fournisseur
+              </label>
+              <input
+                type="text"
+                value={formData.supplier}
+                onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                placeholder="Nom du fournisseur"
+              />
             </div>
 
             {/* Multi-image input */}
@@ -829,11 +916,659 @@ function OrdersManagement() {
   );
 }
 
+// Composant pour gérer les finances
+function FinancesManagement() {
+  const { products } = useProductsStore();
+  const { orders } = useOrdersStore();
+  const { 
+    expenses, 
+    stats, 
+    isLoading, 
+    error, 
+    fetchExpenses, 
+    addExpense, 
+    deleteExpense,
+    calculateStats 
+  } = useFinancesStore();
+  
+  const [showExpenseForm, setShowExpenseForm] = useState(false);
+  const [activeSection, setActiveSection] = useState<'overview' | 'expenses' | 'stock' | 'profitability'>('overview');
+
+  useEffect(() => {
+    fetchExpenses();
+  }, [fetchExpenses]);
+
+  useEffect(() => {
+    if (orders.length > 0 || products.length > 0) {
+      calculateStats(orders, products);
+    }
+  }, [orders, products, expenses, calculateStats]);
+
+  const categoryLabels: Record<ExpenseCategory, string> = {
+    stock: 'Achat de stock',
+    marketing: 'Marketing',
+    transport: 'Transport',
+    autres: 'Autres',
+  };
+
+  const categoryColors: Record<ExpenseCategory, string> = {
+    stock: 'bg-blue-100 text-blue-700',
+    marketing: 'bg-purple-100 text-purple-700',
+    transport: 'bg-orange-100 text-orange-700',
+    autres: 'bg-stone-100 text-stone-700',
+  };
+
+  // Calcul de la rentabilité par produit
+  const productProfitability = products.map(product => {
+    const soldQuantity = product.totalSold || 0;
+    const revenue = soldQuantity * product.price;
+    const cost = soldQuantity * (product.costPrice || 0);
+    const profit = revenue - cost;
+    const margin = revenue > 0 ? (profit / revenue) * 100 : 0;
+    
+    return {
+      id: product.id,
+      name: product.name,
+      costPrice: product.costPrice || 0,
+      salePrice: product.price,
+      stockQuantity: product.stockQuantity || 0,
+      soldQuantity,
+      revenue,
+      cost,
+      profit,
+      margin,
+    };
+  }).sort((a, b) => b.profit - a.profit);
+
+  return (
+    <div>
+      {/* Error Message */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-center gap-2">
+          <AlertCircle className="w-5 h-5" />
+          {error}
+        </div>
+      )}
+
+      {/* Sub-navigation */}
+      <div className="flex flex-wrap gap-2 mb-6">
+        {[
+          { id: 'overview', label: 'Vue d\'ensemble', icon: PieChart },
+          { id: 'expenses', label: 'Dépenses', icon: Receipt },
+          { id: 'stock', label: 'Stock & Coûts', icon: Package },
+          { id: 'profitability', label: 'Rentabilité', icon: TrendingUp },
+        ].map((section) => (
+          <button
+            key={section.id}
+            onClick={() => setActiveSection(section.id as any)}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl font-medium transition-colors ${
+              activeSection === section.id
+                ? 'bg-amber-100 text-amber-700'
+                : 'bg-white text-stone-600 hover:bg-stone-100'
+            }`}
+          >
+            <section.icon className="w-4 h-4" />
+            {section.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Vue d'ensemble */}
+      {activeSection === 'overview' && (
+        <div className="space-y-6">
+          {/* KPIs principaux */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-2 bg-emerald-100 rounded-lg">
+                  <TrendingUp className="w-5 h-5 text-emerald-600" />
+                </div>
+                <p className="text-sm text-stone-500">Chiffre d'affaires</p>
+              </div>
+              <p className="text-2xl font-bold text-emerald-600">{formatPrice(stats?.totalRevenue || 0)}</p>
+            </div>
+            
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-2 bg-red-100 rounded-lg">
+                  <TrendingDown className="w-5 h-5 text-red-600" />
+                </div>
+                <p className="text-sm text-stone-500">Dépenses totales</p>
+              </div>
+              <p className="text-2xl font-bold text-red-600">{formatPrice(stats?.totalExpenses || 0)}</p>
+            </div>
+            
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-2 bg-amber-100 rounded-lg">
+                  <Wallet className="w-5 h-5 text-amber-600" />
+                </div>
+                <p className="text-sm text-stone-500">Bénéfice net</p>
+              </div>
+              <p className={`text-2xl font-bold ${(stats?.totalProfit || 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                {formatPrice(stats?.totalProfit || 0)}
+              </p>
+            </div>
+            
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <div className="p-2 bg-blue-100 rounded-lg">
+                  <Target className="w-5 h-5 text-blue-600" />
+                </div>
+                <p className="text-sm text-stone-500">Marge bénéficiaire</p>
+              </div>
+              <p className={`text-2xl font-bold ${(stats?.profitMargin || 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                {(stats?.profitMargin || 0).toFixed(1)}%
+              </p>
+            </div>
+          </div>
+
+          {/* Statistiques secondaires */}
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Produits les plus vendus */}
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <h3 className="font-semibold text-stone-800 mb-4 flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-amber-500" />
+                Top 5 des ventes
+              </h3>
+              {stats?.topSellingProducts && stats.topSellingProducts.length > 0 ? (
+                <div className="space-y-3">
+                  {stats.topSellingProducts.map((product, index) => (
+                    <div key={product.id} className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="w-6 h-6 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center text-sm font-bold">
+                          {index + 1}
+                        </span>
+                        <span className="text-stone-700 text-sm">{product.name}</span>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-semibold text-amber-600">{product.totalSold} vendus</p>
+                        <p className="text-xs text-stone-500">{formatPrice(product.revenue)}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-stone-500 text-center py-4">Aucune vente enregistrée</p>
+              )}
+            </div>
+
+            {/* Alertes stock bas */}
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <h3 className="font-semibold text-stone-800 mb-4 flex items-center gap-2">
+                <AlertTriangle className="w-5 h-5 text-red-500" />
+                Alertes de stock
+              </h3>
+              {stats?.lowStockProducts && stats.lowStockProducts.length > 0 ? (
+                <div className="space-y-3">
+                  {stats.lowStockProducts.map((product) => (
+                    <div key={product.id} className="flex items-center justify-between p-3 bg-red-50 rounded-xl">
+                      <span className="text-stone-700 text-sm">{product.name}</span>
+                      <div className="text-right">
+                        <p className="font-semibold text-red-600">{product.stockQuantity} en stock</p>
+                        <p className="text-xs text-stone-500">Seuil: {product.minStockAlert}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-emerald-600 text-center py-4">✓ Tous les stocks sont suffisants</p>
+              )}
+            </div>
+          </div>
+
+          {/* Répartition des dépenses */}
+          {stats?.expensesByCategory && stats.expensesByCategory.length > 0 && (
+            <div className="bg-white rounded-2xl p-5 shadow-sm">
+              <h3 className="font-semibold text-stone-800 mb-4 flex items-center gap-2">
+                <PieChart className="w-5 h-5 text-amber-500" />
+                Répartition des dépenses
+              </h3>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {stats.expensesByCategory.map((cat) => (
+                  <div key={cat.category} className="text-center">
+                    <div className={`inline-flex items-center justify-center w-12 h-12 rounded-full ${categoryColors[cat.category]} mb-2`}>
+                      <Receipt className="w-6 h-6" />
+                    </div>
+                    <p className="font-semibold text-stone-800">{formatPrice(cat.amount)}</p>
+                    <p className="text-sm text-stone-500">{categoryLabels[cat.category]}</p>
+                    <p className="text-xs text-stone-400">{cat.percentage.toFixed(1)}%</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Gestion des dépenses */}
+      {activeSection === 'expenses' && (
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold text-stone-800">Historique des dépenses</h3>
+            <button
+              onClick={() => setShowExpenseForm(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium hover:from-amber-600 hover:to-orange-600 transition-all"
+            >
+              <Plus className="w-5 h-5" />
+              Nouvelle dépense
+            </button>
+          </div>
+
+          {isLoading && expenses.length === 0 ? (
+            <div className="bg-white rounded-2xl p-12 text-center">
+              <Loader2 className="w-12 h-12 text-amber-500 animate-spin mx-auto mb-4" />
+              <p className="text-stone-500">Chargement des dépenses...</p>
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-stone-50 border-b border-stone-200">
+                    <tr>
+                      <th className="text-left px-6 py-4 text-sm font-semibold text-stone-600">Date</th>
+                      <th className="text-left px-6 py-4 text-sm font-semibold text-stone-600">Catégorie</th>
+                      <th className="text-left px-6 py-4 text-sm font-semibold text-stone-600">Description</th>
+                      <th className="text-left px-6 py-4 text-sm font-semibold text-stone-600">Produit</th>
+                      <th className="text-right px-6 py-4 text-sm font-semibold text-stone-600">Montant</th>
+                      <th className="text-right px-6 py-4 text-sm font-semibold text-stone-600">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-stone-100">
+                    {expenses.map((expense) => (
+                      <tr key={expense.id} className="hover:bg-stone-50 transition-colors">
+                        <td className="px-6 py-4 text-sm text-stone-600">
+                          {new Date(expense.expense_date).toLocaleDateString('fr-FR')}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${categoryColors[expense.category]}`}>
+                            {categoryLabels[expense.category]}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-sm text-stone-700">{expense.description}</td>
+                        <td className="px-6 py-4 text-sm text-stone-500">
+                          {expense.product_name || '-'}
+                          {expense.quantity ? ` (×${expense.quantity})` : ''}
+                        </td>
+                        <td className="px-6 py-4 text-right font-semibold text-red-600">
+                          -{formatPrice(expense.amount)}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button
+                            onClick={() => deleteExpense(expense.id)}
+                            className="p-2 text-stone-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                            title="Supprimer"
+                          >
+                            <Trash2 className="w-5 h-5" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {expenses.length === 0 && (
+                <div className="text-center py-12">
+                  <Receipt className="w-12 h-12 text-stone-300 mx-auto mb-3" />
+                  <p className="text-stone-500">Aucune dépense enregistrée</p>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Stock & Coûts */}
+      {activeSection === 'stock' && (
+        <div className="space-y-6">
+          <h3 className="text-lg font-semibold text-stone-800">Gestion du stock et des coûts</h3>
+          
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-stone-50 border-b border-stone-200">
+                  <tr>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-stone-600">Produit</th>
+                    <th className="text-right px-6 py-4 text-sm font-semibold text-stone-600">Prix d'achat</th>
+                    <th className="text-right px-6 py-4 text-sm font-semibold text-stone-600">Prix de vente</th>
+                    <th className="text-right px-6 py-4 text-sm font-semibold text-stone-600">Marge unitaire</th>
+                    <th className="text-right px-6 py-4 text-sm font-semibold text-stone-600">Stock</th>
+                    <th className="text-right px-6 py-4 text-sm font-semibold text-stone-600">Valeur stock</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100">
+                  {productProfitability.map((product) => {
+                    const unitMargin = product.salePrice - product.costPrice;
+                    const unitMarginPercent = product.salePrice > 0 ? (unitMargin / product.salePrice) * 100 : 0;
+                    const stockValue = product.stockQuantity * product.costPrice;
+                    
+                    return (
+                      <tr key={product.id} className="hover:bg-stone-50 transition-colors">
+                        <td className="px-6 py-4">
+                          <p className="font-medium text-stone-800">{product.name}</p>
+                        </td>
+                        <td className="px-6 py-4 text-right text-stone-600">
+                          {product.costPrice > 0 ? formatPrice(product.costPrice) : '-'}
+                        </td>
+                        <td className="px-6 py-4 text-right font-medium text-amber-600">
+                          {formatPrice(product.salePrice)}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          {product.costPrice > 0 ? (
+                            <div>
+                              <p className="font-medium text-emerald-600">{formatPrice(unitMargin)}</p>
+                              <p className="text-xs text-stone-500">{unitMarginPercent.toFixed(1)}%</p>
+                            </div>
+                          ) : '-'}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <span className={`px-3 py-1 rounded-full text-sm font-medium ${
+                            product.stockQuantity <= 5 
+                              ? 'bg-red-100 text-red-700' 
+                              : product.stockQuantity <= 10 
+                                ? 'bg-yellow-100 text-yellow-700'
+                                : 'bg-emerald-100 text-emerald-700'
+                          }`}>
+                            {product.stockQuantity}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right font-medium text-stone-700">
+                          {product.costPrice > 0 ? formatPrice(stockValue) : '-'}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+          
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4">
+            <p className="text-amber-800 text-sm">
+              <strong>💡 Astuce :</strong> Pour modifier le prix d'achat ou le stock d'un produit, 
+              allez dans l'onglet "Produits" et modifiez le produit concerné.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Rentabilité */}
+      {activeSection === 'profitability' && (
+        <div className="space-y-6">
+          <h3 className="text-lg font-semibold text-stone-800">Analyse de rentabilité par produit</h3>
+          
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-stone-50 border-b border-stone-200">
+                  <tr>
+                    <th className="text-left px-6 py-4 text-sm font-semibold text-stone-600">Produit</th>
+                    <th className="text-right px-6 py-4 text-sm font-semibold text-stone-600">Vendus</th>
+                    <th className="text-right px-6 py-4 text-sm font-semibold text-stone-600">Revenus</th>
+                    <th className="text-right px-6 py-4 text-sm font-semibold text-stone-600">Coûts</th>
+                    <th className="text-right px-6 py-4 text-sm font-semibold text-stone-600">Profit</th>
+                    <th className="text-right px-6 py-4 text-sm font-semibold text-stone-600">Marge</th>
+                    <th className="text-center px-6 py-4 text-sm font-semibold text-stone-600">Statut</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-stone-100">
+                  {productProfitability.map((product) => (
+                    <tr key={product.id} className="hover:bg-stone-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <p className="font-medium text-stone-800">{product.name}</p>
+                      </td>
+                      <td className="px-6 py-4 text-right text-stone-600">
+                        {product.soldQuantity}
+                      </td>
+                      <td className="px-6 py-4 text-right font-medium text-emerald-600">
+                        {formatPrice(product.revenue)}
+                      </td>
+                      <td className="px-6 py-4 text-right text-red-600">
+                        {formatPrice(product.cost)}
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <span className={`font-bold ${product.profit >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {product.profit >= 0 ? '+' : ''}{formatPrice(product.profit)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <span className={`font-medium ${product.margin >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                          {product.margin.toFixed(1)}%
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        {product.soldQuantity === 0 ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-stone-100 text-stone-600 text-xs rounded-full">
+                            Pas de ventes
+                          </span>
+                        ) : product.margin >= 30 ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-emerald-100 text-emerald-700 text-xs rounded-full">
+                            <ArrowUpRight className="w-3 h-3" />
+                            Rentable
+                          </span>
+                        ) : product.margin >= 0 ? (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-yellow-100 text-yellow-700 text-xs rounded-full">
+                            À surveiller
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 text-red-700 text-xs rounded-full">
+                            <ArrowDownRight className="w-3 h-3" />
+                            Déficitaire
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal d'ajout de dépense */}
+      <AnimatePresence>
+        {showExpenseForm && (
+          <ExpenseFormModal
+            products={products}
+            onSave={async (data) => {
+              await addExpense(data);
+              setShowExpenseForm(false);
+            }}
+            onClose={() => setShowExpenseForm(false)}
+            isLoading={isLoading}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// Modal pour ajouter une dépense
+function ExpenseFormModal({
+  products,
+  onSave,
+  onClose,
+  isLoading,
+}: {
+  products: Product[];
+  onSave: (data: Omit<Expense, 'id' | 'created_at' | 'updated_at'>) => Promise<void>;
+  onClose: () => void;
+  isLoading: boolean;
+}) {
+  const [formData, setFormData] = useState({
+    category: 'stock' as ExpenseCategory,
+    description: '',
+    amount: 0,
+    quantity: 0,
+    product_id: '',
+    supplier: '',
+    expense_date: new Date().toISOString().split('T')[0],
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave({
+      category: formData.category,
+      description: formData.description,
+      amount: Number(formData.amount),
+      quantity: formData.category === 'stock' ? Number(formData.quantity) : undefined,
+      product_id: formData.category === 'stock' ? formData.product_id || undefined : undefined,
+      supplier: formData.supplier || undefined,
+      expense_date: formData.expense_date,
+    });
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        className="bg-white rounded-2xl p-6 max-w-lg w-full"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-stone-800">Nouvelle dépense</h2>
+          <button onClick={onClose} className="p-2 hover:bg-stone-100 rounded-lg transition-colors">
+            <X className="w-5 h-5 text-stone-500" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-2">Catégorie *</label>
+            <select
+              required
+              value={formData.category}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value as ExpenseCategory })}
+              className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+            >
+              <option value="stock">Achat de stock</option>
+              <option value="marketing">Marketing</option>
+              <option value="transport">Transport</option>
+              <option value="autres">Autres</option>
+            </select>
+          </div>
+
+          {formData.category === 'stock' && (
+            <>
+              <div>
+                <label className="block text-sm font-medium text-stone-700 mb-2">Produit</label>
+                <select
+                  value={formData.product_id}
+                  onChange={(e) => setFormData({ ...formData, product_id: e.target.value })}
+                  className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                >
+                  <option value="">Sélectionner un produit</option>
+                  {products.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-stone-700 mb-2">Quantité achetée</label>
+                <input
+                  type="number"
+                  min="0"
+                  value={formData.quantity}
+                  onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
+                  className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  placeholder="10"
+                />
+              </div>
+            </>
+          )}
+
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-2">Description *</label>
+            <input
+              type="text"
+              required
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              placeholder="Achat de 10 tours roses chez Fournisseur X"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-2">Montant (FCFA) *</label>
+            <input
+              type="number"
+              required
+              min="0"
+              value={formData.amount}
+              onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
+              className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              placeholder="50000"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-2">Fournisseur</label>
+            <input
+              type="text"
+              value={formData.supplier}
+              onChange={(e) => setFormData({ ...formData, supplier: e.target.value })}
+              className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              placeholder="Nom du fournisseur"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-2">Date</label>
+            <input
+              type="date"
+              value={formData.expense_date}
+              onChange={(e) => setFormData({ ...formData, expense_date: e.target.value })}
+              className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+            />
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-3 px-4 border border-stone-300 text-stone-700 rounded-xl font-medium hover:bg-stone-50 transition-colors"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 py-3 px-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium hover:from-amber-600 hover:to-orange-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  <Save className="w-5 h-5" />
+                  Enregistrer
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 // Dashboard Admin
 function AdminDashboard() {
   const { logout } = useAdminStore();
   const { products, isLoading, error, fetchProducts, addProduct, updateProduct, deleteProduct, updateStock } = useProductsStore();
-  const [activeTab, setActiveTab] = useState<'products' | 'orders'>('products');
+  const { fetchOrders } = useOrdersStore();
+  const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'finances'>('products');
   const [searchQuery, setSearchQuery] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | undefined>();
@@ -841,7 +1576,8 @@ function AdminDashboard() {
 
   useEffect(() => {
     fetchProducts();
-  }, [fetchProducts]);
+    fetchOrders();
+  }, [fetchProducts, fetchOrders]);
 
   const filteredProducts = products.filter(
     (p) =>
@@ -937,6 +1673,19 @@ function AdminDashboard() {
             <div className="flex items-center gap-2">
               <ShoppingCart className="w-5 h-5" />
               Commandes
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('finances')}
+            className={`px-6 py-3 font-medium transition-colors border-b-2 ${
+              activeTab === 'finances'
+                ? 'border-amber-500 text-amber-600'
+                : 'border-transparent text-stone-500 hover:text-stone-700'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Wallet className="w-5 h-5" />
+              Finances
             </div>
           </button>
         </div>
@@ -1129,6 +1878,9 @@ function AdminDashboard() {
 
         {/* Orders Tab */}
         {activeTab === 'orders' && <OrdersManagement />}
+
+        {/* Finances Tab */}
+        {activeTab === 'finances' && <FinancesManagement />}
       </main>
 
       {/* Product Form Modal */}
