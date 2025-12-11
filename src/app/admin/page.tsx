@@ -1400,19 +1400,30 @@ function ExpenseFormModal({
   const [formData, setFormData] = useState({
     category: 'stock' as ExpenseCategory,
     description: '',
-    amount: 0,
-    quantity: 0,
+    unitPrice: 0,      // Prix unitaire
+    amount: 0,         // Montant total (calculé ou saisi)
+    quantity: 1,
     product_id: '',
     supplier: '',
     expense_date: new Date().toISOString().split('T')[0],
   });
 
+  // Calculer le montant total automatiquement pour les achats de stock
+  const calculatedTotal = formData.category === 'stock' && formData.unitPrice > 0
+    ? formData.unitPrice * formData.quantity
+    : formData.amount;
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    // Pour les achats de stock, utiliser le calcul automatique
+    const finalAmount = formData.category === 'stock' && formData.unitPrice > 0
+      ? formData.unitPrice * formData.quantity
+      : formData.amount;
+    
     onSave({
       category: formData.category,
       description: formData.description,
-      amount: Number(formData.amount),
+      amount: Number(finalAmount),
       quantity: formData.category === 'stock' ? Number(formData.quantity) : undefined,
       product_id: formData.category === 'stock' ? formData.product_id || undefined : undefined,
       supplier: formData.supplier || undefined,
@@ -1475,16 +1486,46 @@ function ExpenseFormModal({
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-stone-700 mb-2">Quantité achetée</label>
+                <label className="block text-sm font-medium text-stone-700 mb-2">Quantité achetée *</label>
                 <input
                   type="number"
-                  min="0"
+                  min="1"
+                  required
                   value={formData.quantity}
                   onChange={(e) => setFormData({ ...formData, quantity: Number(e.target.value) })}
                   className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
                   placeholder="10"
                 />
               </div>
+
+              <div>
+                <label className="block text-sm font-medium text-stone-700 mb-2">Prix unitaire (FCFA) *</label>
+                <input
+                  type="number"
+                  min="0"
+                  required
+                  value={formData.unitPrice}
+                  onChange={(e) => setFormData({ ...formData, unitPrice: Number(e.target.value) })}
+                  className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                  placeholder="25000"
+                />
+                <p className="text-xs text-stone-500 mt-1">Prix d&apos;achat par unité</p>
+              </div>
+
+              {/* Affichage du total calculé */}
+              {formData.unitPrice > 0 && formData.quantity > 0 && (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                  <div className="flex justify-between items-center">
+                    <span className="text-amber-800 font-medium">Total calculé :</span>
+                    <span className="text-xl font-bold text-amber-600">
+                      {formatPrice(formData.unitPrice * formData.quantity)}
+                    </span>
+                  </div>
+                  <p className="text-xs text-amber-700 mt-1">
+                    {formData.quantity} × {formatPrice(formData.unitPrice)} = {formatPrice(formData.unitPrice * formData.quantity)}
+                  </p>
+                </div>
+              )}
             </>
           )}
 
@@ -1500,18 +1541,21 @@ function ExpenseFormModal({
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-stone-700 mb-2">Montant (FCFA) *</label>
-            <input
-              type="number"
-              required
-              min="0"
-              value={formData.amount}
-              onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
-              className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
-              placeholder="50000"
-            />
-          </div>
+          {/* Montant manuel pour les dépenses non-stock */}
+          {formData.category !== 'stock' && (
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-2">Montant (FCFA) *</label>
+              <input
+                type="number"
+                required
+                min="0"
+                value={formData.amount}
+                onChange={(e) => setFormData({ ...formData, amount: Number(e.target.value) })}
+                className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                placeholder="50000"
+              />
+            </div>
+          )}
 
           <div>
             <label className="block text-sm font-medium text-stone-700 mb-2">Fournisseur</label>
