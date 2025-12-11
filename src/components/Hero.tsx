@@ -109,8 +109,8 @@ export default function Hero() {
                   <Truck className="w-6 h-6 text-emerald-600" />
                 </div>
                 <div>
-                  <p className="font-semibold text-stone-800">Livraison Dakar</p>
-                  <p className="text-sm text-stone-500">Rapide et sécurisée</p>
+                  <p className="font-semibold text-stone-800">Livraison gratuite</p>
+                  <p className="text-sm text-stone-500">Partout au Sénégal dès 10,000 FCFA</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">

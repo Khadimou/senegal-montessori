@@ -77,7 +77,7 @@ export default function CheckoutPage() {
   }
 
   const subtotal = getTotalPrice();
-  const shipping = subtotal > 50000 ? 0 : 3000;
+  const shipping = subtotal > 10000 ? 0 : 3000; // Livraison gratuite à partir de 10,000 FCFA
   // Les frais NabooPay sont déjà inclus dans les prix des produits
   const total = subtotal + shipping;
 
@@ -325,9 +325,23 @@ export default function CheckoutPage() {
                     <span>{shipping === 0 ? 'Gratuite' : formatPrice(shipping)}</span>
                   </div>
                   {shipping > 0 && (
-                    <p className="text-xs text-stone-500">
-                      Livraison gratuite à partir de {formatPrice(50000)}
-                    </p>
+                    <div className="space-y-2">
+                      <p className="text-xs text-stone-500">
+                        Ajoutez {formatPrice(10000 - subtotal)} pour bénéficier de la livraison gratuite !
+                      </p>
+                      <div className="p-2 bg-green-50 border border-green-200 rounded-lg">
+                        <p className="text-xs font-semibold text-green-800">
+                          🎁 Livraison gratuite partout au Sénégal dès {formatPrice(10000)}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+                  {shipping === 0 && (
+                    <div className="p-2 bg-green-50 border border-green-200 rounded-lg">
+                      <p className="text-xs font-semibold text-green-800">
+                        ✅ Livraison gratuite incluse !
+                      </p>
+                    </div>
                   )}
                   <div className="flex justify-between text-lg font-bold text-stone-800 pt-3 border-t border-stone-100">
                     <span>Total</span>
@@ -361,12 +375,28 @@ export default function CheckoutPage() {
                   )}
                 </button>
 
-                <div className="mt-4 space-y-2">
+                {/* Trust Badges */}
+                <div className="mt-6 space-y-3 pt-6 border-t border-stone-100">
+                  <div className="grid grid-cols-2 gap-2 text-xs">
+                    <div className="flex items-center gap-2 text-stone-600">
+                      <span className="text-green-500">✓</span>
+                      <span>Paiement sécurisé</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-stone-600">
+                      <span className="text-green-500">✓</span>
+                      <span>Livraison rapide</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-stone-600">
+                      <span className="text-green-500">✓</span>
+                      <span>Garantie qualité</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-stone-600">
+                      <span className="text-green-500">✓</span>
+                      <span>Support client</span>
+                    </div>
+                  </div>
                   <p className="text-xs text-stone-500 text-center">
-                    🔒 Paiement sécurisé par NabooPay
-                  </p>
-                  <p className="text-xs text-stone-400 text-center">
-                    Vos informations seront confirmées sur la page de paiement pour votre sécurité
+                    🔒 Paiement sécurisé par NabooPay - Vos informations seront confirmées sur la page de paiement
                   </p>
                 </div>
               </motion.div>

@@ -162,6 +162,49 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Trust & Benefits Section */}
+      <section className="py-16 bg-stone-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-4 gap-6">
+            {[
+              {
+                icon: '🚚',
+                title: 'Livraison gratuite',
+                description: 'Partout au Sénégal dès 10,000 FCFA'
+              },
+              {
+                icon: '🔒',
+                title: 'Paiement sécurisé',
+                description: 'Wave, Orange Money, Free Money, Banque'
+              },
+              {
+                icon: '⭐',
+                title: 'Qualité garantie',
+                description: 'Matériaux certifiés et durables'
+              },
+              {
+                icon: '💬',
+                title: 'Support client',
+                description: 'Assistance 7j/7 pour vos questions'
+              }
+            ].map((item, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className="bg-white rounded-2xl p-6 text-center shadow-sm border border-stone-100"
+              >
+                <div className="text-4xl mb-3">{item.icon}</div>
+                <h3 className="font-semibold text-stone-800 mb-2">{item.title}</h3>
+                <p className="text-sm text-stone-600">{item.description}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* CTA Section */}
       <section className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -182,8 +225,11 @@ export default function HomePage() {
               <h2 className="text-3xl md:text-5xl font-bold mb-6">
                 Prêt à commencer l&apos;aventure Montessori ?
               </h2>
-              <p className="text-xl text-stone-300 mb-8 max-w-2xl mx-auto">
+              <p className="text-xl text-stone-300 mb-4 max-w-2xl mx-auto">
                 Découvrez notre collection complète et offrez à votre enfant les outils pour grandir et s&apos;épanouir
+              </p>
+              <p className="text-lg text-amber-300 mb-8 font-semibold">
+                🎁 Livraison gratuite partout au Sénégal dès 10,000 FCFA
               </p>
               <Link
                 href="/produits"

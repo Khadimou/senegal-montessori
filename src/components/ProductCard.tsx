@@ -45,6 +45,11 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
             
             {/* Badges */}
             <div className="absolute top-4 left-4 flex flex-col gap-2">
+              {product.price > 10000 && (
+                <span className="px-3 py-1 bg-green-500 text-white text-xs font-bold rounded-full shadow-lg animate-pulse">
+                  🎁 Livraison gratuite
+                </span>
+              )}
               {!product.inStock && (
                 <span className="px-3 py-1 bg-stone-800 text-white text-xs font-medium rounded-full">
                   Rupture de stock
@@ -88,18 +93,30 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
             <p className="mt-2 text-stone-500 text-sm line-clamp-2">
               {product.description}
             </p>
-            <div className="mt-4 flex items-center justify-between">
-              <span className="text-xl font-bold text-amber-600">
-                {formatPrice(product.price)}
-              </span>
-              {product.inStock ? (
-                <span className="text-xs text-emerald-600 font-medium bg-emerald-50 px-2 py-1 rounded-full">
-                  En stock
+            <div className="mt-4 space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xl font-bold text-amber-600">
+                  {formatPrice(product.price)}
                 </span>
-              ) : (
-                <span className="text-xs text-stone-500 font-medium bg-stone-100 px-2 py-1 rounded-full">
-                  Indisponible
-                </span>
+                {product.inStock ? (
+                  <span className="text-xs text-emerald-600 font-medium bg-emerald-50 px-2 py-1 rounded-full">
+                    ✓ En stock
+                  </span>
+                ) : (
+                  <span className="text-xs text-stone-500 font-medium bg-stone-100 px-2 py-1 rounded-full">
+                    Indisponible
+                  </span>
+                )}
+              </div>
+              {product.price <= 10000 && (
+                <p className="text-xs text-stone-500">
+                  + {formatPrice(3000)} de livraison
+                </p>
+              )}
+              {product.price > 10000 && (
+                <p className="text-xs text-green-600 font-medium">
+                  ✓ Livraison gratuite incluse
+                </p>
               )}
             </div>
           </div>
