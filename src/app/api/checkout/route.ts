@@ -79,13 +79,39 @@ export async function POST(request: NextRequest) {
     const successUrl = `${baseUrl}/checkout/success?order_id=${order.id}`;
     const errorUrl = `${baseUrl}/checkout/error?order_id=${order.id}`;
 
+    // Vérifier si on est en HTTPS (requis par NabooPay)
+    const isHttps = baseUrl.startsWith('https://');
+    
+    if (!isHttps) {
+      // Mode développement - simuler le succès sans NabooPay
+      console.log(`[Checkout] Mode DEV - NabooPay requiert HTTPS. Commande ${order.id} créée.`);
+      
+      // Mettre à jour le statut pour simuler un paiement réussi en dev
+      await supabase
+        .from('orders')
+        .update({
+          status: 'confirmed',
+          payment_status: 'done',
+        })
+        .eq('id', order.id);
+
+      return NextResponse.json({
+        success: true,
+        order_id: order.id,
+        checkout_url: successUrl, // Rediriger directement vers success en dev
+        dev_mode: true,
+        message: 'Mode développement - NabooPay requiert HTTPS. Déployez sur Vercel pour tester les paiements.',
+      });
+    }
+
+    // Production - utiliser NabooPay
     const nabooProducts = formatCartForNabooPay(items);
 
     const nabooResponse = await naboopay.createTransaction(
       nabooProducts,
       successUrl,
       errorUrl,
-      [paymentMethod] // Utiliser uniquement la méthode choisie
+      [paymentMethod]
     );
 
     // 3. Mettre à jour la commande avec l'ID de transaction NabooPay
