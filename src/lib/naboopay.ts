@@ -115,8 +115,8 @@ class NabooPayClient {
       products,
       success_url: successUrl,
       error_url: errorUrl,
-      is_escrow: false,
-      is_merchant: true,
+      is_escrow: false, // Pas d'escrow = paiement direct
+      is_merchant: true, // Boutique e-commerce
     };
 
     return this.request<CreateTransactionResponse>(
