@@ -1,5 +1,6 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -9,6 +10,20 @@ import { formatPrice } from '@/data/products';
 
 export default function CartPage() {
   const { items, updateQuantity, removeItem, getTotalPrice, clearCart } = useCartStore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
   const subtotal = getTotalPrice();
   const shipping = subtotal > 50000 ? 0 : 3000;
   const total = subtotal + shipping;
@@ -78,14 +93,16 @@ export default function CartPage() {
                   {/* Image */}
                   <Link
                     href={`/produits/${item.id}`}
-                    className="relative w-28 h-28 rounded-xl overflow-hidden flex-shrink-0 group"
+                    className="relative w-28 h-28 rounded-xl overflow-hidden flex-shrink-0 group bg-stone-100"
                   >
-                    <Image
-                      src={item.image}
-                      alt={item.name}
-                      fill
-                      className="object-cover group-hover:scale-110 transition-transform"
-                    />
+                    {(item.images?.[0] || item.image) && (
+                      <Image
+                        src={item.images?.[0] || item.image}
+                        alt={item.name}
+                        fill
+                        className="object-cover group-hover:scale-110 transition-transform"
+                      />
+                    )}
                   </Link>
 
                   {/* Details */}
@@ -186,27 +203,33 @@ export default function CartPage() {
                 </div>
               </div>
 
-              <button className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold hover:from-amber-600 hover:to-orange-600 transition-all shadow-lg shadow-amber-500/25">
+              <Link
+                href="/checkout"
+                className="w-full flex items-center justify-center gap-3 px-6 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold hover:from-amber-600 hover:to-orange-600 transition-all shadow-lg shadow-amber-500/25"
+              >
                 <CreditCard className="w-5 h-5" />
                 Passer la commande
-              </button>
+              </Link>
 
               <p className="mt-4 text-xs text-stone-500 text-center">
-                Paiement sécurisé par Wave, Orange Money ou à la livraison
+                🔒 Paiement sécurisé par NabooPay
               </p>
 
               {/* Payment Methods */}
               <div className="mt-6 pt-6 border-t border-stone-100">
                 <p className="text-sm text-stone-600 text-center mb-3">Modes de paiement acceptés</p>
-                <div className="flex justify-center gap-4">
-                  <div className="w-16 h-10 bg-stone-100 rounded-lg flex items-center justify-center">
-                    <span className="text-xs font-bold text-orange-500">Wave</span>
+                <div className="flex justify-center gap-3">
+                  <div className="px-3 py-2 bg-blue-50 rounded-lg flex items-center justify-center">
+                    <span className="text-xs font-bold text-blue-600">Wave</span>
                   </div>
-                  <div className="w-16 h-10 bg-stone-100 rounded-lg flex items-center justify-center">
-                    <span className="text-xs font-bold text-orange-600">OM</span>
+                  <div className="px-3 py-2 bg-orange-50 rounded-lg flex items-center justify-center">
+                    <span className="text-xs font-bold text-orange-600">Orange Money</span>
                   </div>
-                  <div className="w-16 h-10 bg-stone-100 rounded-lg flex items-center justify-center">
-                    <span className="text-xs font-bold text-stone-600">Cash</span>
+                  <div className="px-3 py-2 bg-purple-50 rounded-lg flex items-center justify-center">
+                    <span className="text-xs font-bold text-purple-600">Free Money</span>
+                  </div>
+                  <div className="px-3 py-2 bg-stone-100 rounded-lg flex items-center justify-center">
+                    <span className="text-xs font-bold text-stone-600">Banque</span>
                   </div>
                 </div>
               </div>
@@ -217,4 +240,3 @@ export default function CartPage() {
     </div>
   );
 }
-
