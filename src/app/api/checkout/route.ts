@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Calculer le total
+    // Calculer le total (prix affiché au client)
     const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
 
     // 1. Créer la commande dans Supabase avec statut "pending"
@@ -110,7 +110,27 @@ export async function POST(request: NextRequest) {
     }
 
     // Production - utiliser NabooPay
-    const nabooProducts = formatCartForNabooPay(items);
+    // Ajuster les prix des produits pour absorber les frais NabooPay (2%)
+    // Si le client doit payer P, et NabooPay ajoute 2% de frais :
+    // - Montant envoyé à NabooPay = M
+    // - Frais NabooPay = M * 0.02
+    // - Total payé = M + (M * 0.02) = M * 1.02
+    // On veut : M * 1.02 = P (prix affiché)
+    // Donc : M = P / 1.02
+    const NABOOPAY_FEE_RATE = 0.02; // 2% de frais
+    
+    const adjustedItems = items.map(item => ({
+      ...item,
+      price: Math.round(item.price / (1 + NABOOPAY_FEE_RATE)) // Réduire de 2% pour absorber les frais
+    }));
+    
+    const nabooProducts = formatCartForNabooPay(adjustedItems);
+    
+    // Log pour debug
+    const originalTotal = total;
+    const adjustedTotal = adjustedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const estimatedFees = Math.round(adjustedTotal * NABOOPAY_FEE_RATE);
+    console.log(`[Checkout] Prix affiché: ${originalTotal} FCFA, Montant NabooPay: ${adjustedTotal} FCFA, Frais estimés: ${estimatedFees} FCFA, Total payé: ${adjustedTotal + estimatedFees} FCFA`);
 
     const nabooResponse = await naboopay.createTransaction(
       nabooProducts,
