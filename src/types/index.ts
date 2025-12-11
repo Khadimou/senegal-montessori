@@ -21,3 +21,30 @@ export interface Category {
   description: string;
   image: string;
 }
+
+export interface OrderItem {
+  product_id: string;
+  product_name: string;
+  quantity: number;
+  price: number;
+}
+
+export type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
+export type PaymentStatus = 'pending' | 'done' | 'failed';
+
+export interface Order {
+  id: string;
+  customer_name: string;
+  customer_email: string;
+  customer_phone: string;
+  customer_address: string;
+  items: OrderItem[];
+  total: number;
+  status: OrderStatus;
+  payment_method: string;
+  payment_status?: PaymentStatus;
+  naboopay_transaction_id?: string;
+  notes?: string;
+  created_at: string;
+  updated_at: string;
+}

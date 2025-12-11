@@ -22,6 +22,7 @@ export const metadata: Metadata = {
   description: "Boutique en ligne de jouets éducatifs Montessori au Sénégal. Matériel pédagogique de qualité pour le développement de votre enfant.",
   keywords: ["Montessori", "jouets éducatifs", "Sénégal", "Dakar", "enfants", "pédagogie", "apprentissage"],
   authors: [{ name: "Montessori Sénégal" }],
+  // Les icônes sont automatiquement détectées par Next.js depuis app/icon.svg et app/apple-icon.svg
   openGraph: {
     title: "Montessori Sénégal - Jouets Éducatifs pour Enfants",
     description: "Boutique en ligne de jouets éducatifs Montessori au Sénégal.",

@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- Fond avec dégradé ambre/orange -->
+  <rect width="512" height="512" rx="80" fill="url(#gradient)"/>
+  <defs>
+    <linearGradient id="gradient" x1="0" y1="0" x2="512" y2="512" gradientUnits="userSpaceOnUse">
+      <stop offset="0%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#F97316"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Forme géométrique Montessori (triangle avec cercle) -->
+  <circle cx="256" cy="192" r="64" fill="white" opacity="0.9"/>
+  <path d="M 160 320 L 256 416 L 352 320 Z" fill="white" opacity="0.9"/>
+  <circle cx="256" cy="320" r="24" fill="#F59E0B"/>
+</svg>
+

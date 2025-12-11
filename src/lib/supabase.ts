@@ -30,7 +30,11 @@ export interface DbOrder {
   total: number;
   status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
   payment_method: string;
+  payment_status?: 'pending' | 'done' | 'failed';
+  naboopay_transaction_id?: string;
+  notes?: string;
   created_at: string;
+  updated_at: string;
 }
 
 export interface OrderItem {
