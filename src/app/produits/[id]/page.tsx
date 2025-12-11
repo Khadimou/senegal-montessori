@@ -17,27 +17,48 @@ interface ProductPageProps {
 
 export default function ProductPage({ params }: ProductPageProps) {
   const { id } = use(params);
-  const { products } = useProductsStore();
+  const { products, isLoading, fetchProducts, lastFetch } = useProductsStore();
   const [quantity, setQuantity] = useState(1);
   const { addItem, openCart } = useCartStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    // S'assurer que les produits sont chargés
+    if (!lastFetch) {
+      fetchProducts();
+    }
+  }, [lastFetch, fetchProducts]);
 
-  if (!mounted) {
+  // Afficher le chargement si les produits ne sont pas encore chargés
+  if (!mounted || (isLoading && products.length === 0) || (!lastFetch && products.length === 0)) {
     return (
       <div className="min-h-screen bg-stone-50 flex items-center justify-center">
-        <div className="w-8 h-8 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-stone-500">Chargement du produit...</p>
+        </div>
       </div>
     );
   }
 
   const product = products.find(p => p.id === id);
 
-  if (!product) {
+  // Seulement afficher 404 si les produits sont chargés mais le produit n'existe pas
+  if (!product && lastFetch) {
     notFound();
+  }
+
+  // Sécurité supplémentaire pendant le chargement
+  if (!product) {
+    return (
+      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-stone-500">Chargement du produit...</p>
+        </div>
+      </div>
+    );
   }
 
   const relatedProducts = products
