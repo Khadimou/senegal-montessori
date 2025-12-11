@@ -46,14 +46,6 @@ export interface CreateTransactionResponse {
   created_at: string;
 }
 
-export interface WebhookPayload {
-  transaction_id: string;
-  status: string;
-  amount: number;
-  payment_method: string;
-  paid_at?: string;
-}
-
 // Client NabooPay
 class NabooPayClient {
   private apiKey: string;
