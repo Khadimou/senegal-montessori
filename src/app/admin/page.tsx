@@ -1406,6 +1406,7 @@ function ExpenseFormModal({
     product_id: '',
     supplier: '',
     expense_date: new Date().toISOString().split('T')[0],
+    updateStock: false, // Par défaut, ne pas modifier le stock automatiquement
   });
 
   // Calculer le montant total automatiquement pour les achats de stock
@@ -1428,7 +1429,8 @@ function ExpenseFormModal({
       product_id: formData.category === 'stock' ? formData.product_id || undefined : undefined,
       supplier: formData.supplier || undefined,
       expense_date: formData.expense_date,
-    });
+      updateStock: formData.category === 'stock' ? formData.updateStock : false,
+    } as any);
   };
 
   return (
@@ -1526,6 +1528,26 @@ function ExpenseFormModal({
                   </p>
                 </div>
               )}
+
+              {/* Option pour mettre à jour le stock */}
+              <div className="flex items-start gap-3 p-4 bg-blue-50 border border-blue-200 rounded-xl">
+                <input
+                  type="checkbox"
+                  id="updateStock"
+                  checked={formData.updateStock}
+                  onChange={(e) => setFormData({ ...formData, updateStock: e.target.checked })}
+                  className="mt-1 w-5 h-5 text-amber-600 border-stone-300 rounded focus:ring-amber-500"
+                />
+                <div>
+                  <label htmlFor="updateStock" className="font-medium text-blue-800 cursor-pointer">
+                    Ajouter au stock du produit
+                  </label>
+                  <p className="text-xs text-blue-700 mt-1">
+                    Si coché, la quantité sera ajoutée au stock actuel du produit.
+                    Décochez si le stock est déjà à jour.
+                  </p>
+                </div>
+              </div>
             </>
           )}
 

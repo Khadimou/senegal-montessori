@@ -112,8 +112,9 @@ export const useFinancesStore = create<FinancesState>((set, get) => ({
 
       if (error) throw error;
 
-      // Si c'est un achat de stock, mettre à jour la quantité du produit
-      if (expenseData.category === 'stock' && expenseData.product_id && expenseData.quantity) {
+      // Si c'est un achat de stock ET que l'utilisateur veut mettre à jour le stock
+      const shouldUpdateStock = (expenseData as any).updateStock;
+      if (expenseData.category === 'stock' && expenseData.product_id && expenseData.quantity && shouldUpdateStock) {
         const { data: product } = await supabase
           .from('products')
           .select('stock_quantity')
@@ -288,6 +289,8 @@ export const useFinancesStore = create<FinancesState>((set, get) => ({
     
     // Calculs de base
     const totalRevenue = paidOrders.reduce((sum, o) => sum + o.total, 0);
+    // Pour les dépenses, on utilise amount directement (maintenant stocké comme total)
+    // Le montant est déjà le total = prix unitaire × quantité
     const totalExpenses = expenses.reduce((sum, e) => sum + e.amount, 0);
     const totalProfit = totalRevenue - totalExpenses;
     const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
