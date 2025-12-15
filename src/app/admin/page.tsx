@@ -36,14 +36,20 @@ import {
   Receipt,
   Wallet,
   ArrowUpRight,
-  ArrowDownRight
+  ArrowDownRight,
+  Tag,
+  Percent,
+  Gift,
+  Copy,
+  Clock
 } from 'lucide-react';
 import { useAdminStore } from '@/store/admin';
 import { useProductsStore } from '@/store/products';
 import { useOrdersStore } from '@/store/orders';
 import { useFinancesStore } from '@/store/finances';
+import { usePromoStore } from '@/store/promo';
 import { categories, formatPrice } from '@/data/products';
-import { Product, Order, OrderStatus, Expense, ExpenseCategory } from '@/types';
+import { Product, Order, OrderStatus, Expense, ExpenseCategory, PromoCode, DiscountType } from '@/types';
 
 // Composant Login
 function LoginForm() {
@@ -1385,6 +1391,511 @@ function FinancesManagement() {
   );
 }
 
+// Composant pour gérer les codes promo
+function PromoManagement() {
+  const { promoCodes, isLoading, error, fetchPromoCodes, addPromoCode, deletePromoCode, togglePromoCode } = usePromoStore();
+  const [showForm, setShowForm] = useState(false);
+  const [editingPromo, setEditingPromo] = useState<PromoCode | null>(null);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
+
+  useEffect(() => {
+    fetchPromoCodes();
+  }, [fetchPromoCodes]);
+
+  const filteredPromoCodes = promoCodes.filter((promo) =>
+    promo.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    promo.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  const stats = {
+    total: promoCodes.length,
+    active: promoCodes.filter((p) => p.is_active).length,
+    expired: promoCodes.filter((p) => p.expires_at && new Date(p.expires_at) < new Date()).length,
+  };
+
+  const copyToClipboard = (code: string) => {
+    navigator.clipboard.writeText(code);
+  };
+
+  return (
+    <div>
+      {/* Error Message */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 flex items-center gap-2">
+          <AlertCircle className="w-5 h-5" />
+          {error}
+        </div>
+      )}
+
+      {/* Stats */}
+      <div className="grid grid-cols-3 gap-4 mb-8">
+        <div className="bg-white rounded-2xl p-5 shadow-sm">
+          <p className="text-sm text-stone-500">Total codes</p>
+          <p className="text-3xl font-bold text-stone-800">{stats.total}</p>
+        </div>
+        <div className="bg-white rounded-2xl p-5 shadow-sm">
+          <p className="text-sm text-stone-500">Actifs</p>
+          <p className="text-3xl font-bold text-emerald-600">{stats.active}</p>
+        </div>
+        <div className="bg-white rounded-2xl p-5 shadow-sm">
+          <p className="text-sm text-stone-500">Expirés</p>
+          <p className="text-3xl font-bold text-red-500">{stats.expired}</p>
+        </div>
+      </div>
+
+      {/* Actions */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <div className="flex-1 relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
+          <input
+            type="text"
+            placeholder="Rechercher un code promo..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-12 pr-4 py-3 rounded-xl border border-stone-200 bg-white focus:outline-none focus:ring-2 focus:ring-amber-500"
+          />
+        </div>
+        <button
+          onClick={() => {
+            setEditingPromo(null);
+            setShowForm(true);
+          }}
+          className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium hover:from-amber-600 hover:to-orange-600 transition-all"
+        >
+          <Plus className="w-5 h-5" />
+          Nouveau code promo
+        </button>
+      </div>
+
+      {/* Promo Codes List */}
+      {isLoading && promoCodes.length === 0 ? (
+        <div className="bg-white rounded-2xl p-12 text-center">
+          <Loader2 className="w-12 h-12 text-amber-500 animate-spin mx-auto mb-4" />
+          <p className="text-stone-500">Chargement des codes promo...</p>
+        </div>
+      ) : (
+        <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-stone-50 border-b border-stone-200">
+                <tr>
+                  <th className="text-left px-6 py-4 text-sm font-semibold text-stone-600">Code</th>
+                  <th className="text-left px-6 py-4 text-sm font-semibold text-stone-600">Réduction</th>
+                  <th className="text-left px-6 py-4 text-sm font-semibold text-stone-600">Conditions</th>
+                  <th className="text-center px-6 py-4 text-sm font-semibold text-stone-600">Utilisations</th>
+                  <th className="text-left px-6 py-4 text-sm font-semibold text-stone-600">Validité</th>
+                  <th className="text-center px-6 py-4 text-sm font-semibold text-stone-600">Statut</th>
+                  <th className="text-right px-6 py-4 text-sm font-semibold text-stone-600">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-stone-100">
+                {filteredPromoCodes.map((promo) => {
+                  const isExpired = promo.expires_at && new Date(promo.expires_at) < new Date();
+                  const usagePercent = promo.usage_limit 
+                    ? Math.round((promo.usage_count / promo.usage_limit) * 100) 
+                    : null;
+
+                  return (
+                    <tr key={promo.id} className="hover:bg-stone-50 transition-colors">
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono font-bold text-amber-600 bg-amber-50 px-3 py-1 rounded-lg">
+                            {promo.code}
+                          </span>
+                          <button
+                            onClick={() => copyToClipboard(promo.code)}
+                            className="p-1 text-stone-400 hover:text-stone-600"
+                            title="Copier"
+                          >
+                            <Copy className="w-4 h-4" />
+                          </button>
+                        </div>
+                        {promo.description && (
+                          <p className="text-xs text-stone-500 mt-1">{promo.description}</p>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-2">
+                          {promo.discount_type === 'percentage' ? (
+                            <span className="flex items-center gap-1 text-purple-600 font-semibold">
+                              <Percent className="w-4 h-4" />
+                              {promo.discount_value}%
+                            </span>
+                          ) : (
+                            <span className="text-emerald-600 font-semibold">
+                              {formatPrice(promo.discount_value)}
+                            </span>
+                          )}
+                        </div>
+                        {promo.max_discount && promo.discount_type === 'percentage' && (
+                          <p className="text-xs text-stone-500">Max: {formatPrice(promo.max_discount)}</p>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-stone-600">
+                        {promo.min_order_amount > 0 ? (
+                          <span>Min: {formatPrice(promo.min_order_amount)}</span>
+                        ) : (
+                          <span className="text-stone-400">Aucune</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <div>
+                          <span className="font-semibold">{promo.usage_count}</span>
+                          {promo.usage_limit && (
+                            <span className="text-stone-400">/{promo.usage_limit}</span>
+                          )}
+                        </div>
+                        {usagePercent !== null && (
+                          <div className="w-full bg-stone-200 rounded-full h-1.5 mt-1">
+                            <div 
+                              className={`h-1.5 rounded-full ${usagePercent >= 90 ? 'bg-red-500' : usagePercent >= 70 ? 'bg-yellow-500' : 'bg-emerald-500'}`}
+                              style={{ width: `${Math.min(usagePercent, 100)}%` }}
+                            />
+                          </div>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-sm">
+                        {promo.expires_at ? (
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-4 h-4 text-stone-400" />
+                            <span className={isExpired ? 'text-red-600' : 'text-stone-600'}>
+                              {new Date(promo.expires_at).toLocaleDateString('fr-FR')}
+                            </span>
+                          </div>
+                        ) : (
+                          <span className="text-stone-400">Illimité</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-center">
+                        <button
+                          onClick={() => togglePromoCode(promo.id, !promo.is_active)}
+                          className={`px-3 py-1 rounded-full text-sm font-medium transition-colors ${
+                            promo.is_active && !isExpired
+                              ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                              : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
+                          }`}
+                        >
+                          {isExpired ? 'Expiré' : promo.is_active ? 'Actif' : 'Inactif'}
+                        </button>
+                      </td>
+                      <td className="px-6 py-4">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => {
+                              setEditingPromo(promo);
+                              setShowForm(true);
+                            }}
+                            className="p-2 text-stone-500 hover:text-amber-600 hover:bg-amber-50 rounded-lg transition-colors"
+                            title="Modifier"
+                          >
+                            <Edit className="w-5 h-5" />
+                          </button>
+                          {deleteConfirm === promo.id ? (
+                            <div className="flex items-center gap-1">
+                              <button
+                                onClick={() => {
+                                  deletePromoCode(promo.id);
+                                  setDeleteConfirm(null);
+                                }}
+                                className="p-2 text-white bg-red-500 hover:bg-red-600 rounded-lg transition-colors"
+                                title="Confirmer"
+                              >
+                                <Check className="w-5 h-5" />
+                              </button>
+                              <button
+                                onClick={() => setDeleteConfirm(null)}
+                                className="p-2 text-stone-500 hover:bg-stone-100 rounded-lg transition-colors"
+                                title="Annuler"
+                              >
+                                <X className="w-5 h-5" />
+                              </button>
+                            </div>
+                          ) : (
+                            <button
+                              onClick={() => setDeleteConfirm(promo.id)}
+                              className="p-2 text-stone-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                              title="Supprimer"
+                            >
+                              <Trash2 className="w-5 h-5" />
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          {filteredPromoCodes.length === 0 && (
+            <div className="text-center py-12">
+              <Tag className="w-12 h-12 text-stone-300 mx-auto mb-3" />
+              <p className="text-stone-500">Aucun code promo trouvé</p>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Promo Form Modal */}
+      <AnimatePresence>
+        {showForm && (
+          <PromoFormModal
+            promo={editingPromo}
+            onSave={async (data) => {
+              if (editingPromo) {
+                // Update existing
+                const { updatePromoCode } = usePromoStore.getState();
+                await updatePromoCode(editingPromo.id, data);
+              } else {
+                // Add new
+                await addPromoCode(data as any);
+              }
+              setShowForm(false);
+              setEditingPromo(null);
+            }}
+            onClose={() => {
+              setShowForm(false);
+              setEditingPromo(null);
+            }}
+            isLoading={isLoading}
+          />
+        )}
+      </AnimatePresence>
+    </div>
+  );
+}
+
+// Modal pour ajouter/modifier un code promo
+function PromoFormModal({
+  promo,
+  onSave,
+  onClose,
+  isLoading,
+}: {
+  promo: PromoCode | null;
+  onSave: (data: Partial<PromoCode>) => Promise<void>;
+  onClose: () => void;
+  isLoading: boolean;
+}) {
+  const [formData, setFormData] = useState({
+    code: promo?.code || '',
+    description: promo?.description || '',
+    discount_type: promo?.discount_type || 'percentage' as DiscountType,
+    discount_value: promo?.discount_value || 10,
+    min_order_amount: promo?.min_order_amount || 0,
+    max_discount: promo?.max_discount || undefined as number | undefined,
+    usage_limit: promo?.usage_limit || undefined as number | undefined,
+    starts_at: promo?.starts_at ? promo.starts_at.split('T')[0] : new Date().toISOString().split('T')[0],
+    expires_at: promo?.expires_at ? promo.expires_at.split('T')[0] : '',
+    is_active: promo?.is_active ?? true,
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSave({
+      code: formData.code,
+      description: formData.description || undefined,
+      discount_type: formData.discount_type,
+      discount_value: Number(formData.discount_value),
+      min_order_amount: Number(formData.min_order_amount) || 0,
+      max_discount: formData.max_discount ? Number(formData.max_discount) : undefined,
+      usage_limit: formData.usage_limit ? Number(formData.usage_limit) : undefined,
+      starts_at: formData.starts_at,
+      expires_at: formData.expires_at || undefined,
+      is_active: formData.is_active,
+    });
+  };
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        className="bg-white rounded-2xl p-6 max-w-lg w-full my-8"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center justify-between mb-6">
+          <h2 className="text-xl font-bold text-stone-800 flex items-center gap-2">
+            <Gift className="w-6 h-6 text-amber-500" />
+            {promo ? 'Modifier le code promo' : 'Nouveau code promo'}
+          </h2>
+          <button onClick={onClose} className="p-2 hover:bg-stone-100 rounded-lg transition-colors">
+            <X className="w-5 h-5 text-stone-500" />
+          </button>
+        </div>
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-2">Code promo *</label>
+            <input
+              type="text"
+              required
+              value={formData.code}
+              onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+              className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono uppercase"
+              placeholder="BIENVENUE10"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-stone-700 mb-2">Description (interne)</label>
+            <input
+              type="text"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              placeholder="Code de bienvenue pour les nouveaux clients"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-2">Type de réduction *</label>
+              <select
+                value={formData.discount_type}
+                onChange={(e) => setFormData({ ...formData, discount_type: e.target.value as DiscountType })}
+                className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              >
+                <option value="percentage">Pourcentage (%)</option>
+                <option value="fixed">Montant fixe (FCFA)</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-2">
+                Valeur {formData.discount_type === 'percentage' ? '(%)' : '(FCFA)'} *
+              </label>
+              <input
+                type="number"
+                required
+                min="0"
+                max={formData.discount_type === 'percentage' ? 100 : undefined}
+                value={formData.discount_value}
+                onChange={(e) => setFormData({ ...formData, discount_value: Number(e.target.value) })}
+                className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                placeholder={formData.discount_type === 'percentage' ? '10' : '5000'}
+              />
+            </div>
+          </div>
+
+          {formData.discount_type === 'percentage' && (
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-2">
+                Plafond de réduction (FCFA)
+              </label>
+              <input
+                type="number"
+                min="0"
+                value={formData.max_discount || ''}
+                onChange={(e) => setFormData({ ...formData, max_discount: e.target.value ? Number(e.target.value) : undefined })}
+                className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                placeholder="Optionnel - ex: 10000"
+              />
+              <p className="text-xs text-stone-500 mt-1">Laissez vide pour aucun plafond</p>
+            </div>
+          )}
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-2">Commande minimum (FCFA)</label>
+              <input
+                type="number"
+                min="0"
+                value={formData.min_order_amount}
+                onChange={(e) => setFormData({ ...formData, min_order_amount: Number(e.target.value) })}
+                className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                placeholder="0"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-2">Limite d&apos;utilisation</label>
+              <input
+                type="number"
+                min="1"
+                value={formData.usage_limit || ''}
+                onChange={(e) => setFormData({ ...formData, usage_limit: e.target.value ? Number(e.target.value) : undefined })}
+                className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                placeholder="Illimité"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-2">Date de début *</label>
+              <input
+                type="date"
+                required
+                value={formData.starts_at}
+                onChange={(e) => setFormData({ ...formData, starts_at: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-stone-700 mb-2">Date d&apos;expiration</label>
+              <input
+                type="date"
+                value={formData.expires_at}
+                onChange={(e) => setFormData({ ...formData, expires_at: e.target.value })}
+                className="w-full px-4 py-3 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500"
+              />
+              <p className="text-xs text-stone-500 mt-1">Laissez vide pour aucune expiration</p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3 p-4 bg-stone-50 rounded-xl">
+            <input
+              type="checkbox"
+              id="isActive"
+              checked={formData.is_active}
+              onChange={(e) => setFormData({ ...formData, is_active: e.target.checked })}
+              className="w-5 h-5 text-amber-600 border-stone-300 rounded focus:ring-amber-500"
+            />
+            <label htmlFor="isActive" className="font-medium text-stone-700 cursor-pointer">
+              Code promo actif
+            </label>
+          </div>
+
+          <div className="flex gap-3 pt-4">
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex-1 py-3 px-4 border border-stone-300 text-stone-700 rounded-xl font-medium hover:bg-stone-50 transition-colors"
+            >
+              Annuler
+            </button>
+            <button
+              type="submit"
+              disabled={isLoading}
+              className="flex-1 py-3 px-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-medium hover:from-amber-600 hover:to-orange-600 transition-all disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isLoading ? (
+                <Loader2 className="w-5 h-5 animate-spin" />
+              ) : (
+                <>
+                  <Save className="w-5 h-5" />
+                  {promo ? 'Modifier' : 'Créer'}
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </motion.div>
+    </motion.div>
+  );
+}
+
 // Modal pour ajouter une dépense
 function ExpenseFormModal({
   products,
@@ -1634,7 +2145,7 @@ function AdminDashboard() {
   const { logout } = useAdminStore();
   const { products, isLoading, error, fetchProducts, addProduct, updateProduct, deleteProduct, updateStock } = useProductsStore();
   const { fetchOrders } = useOrdersStore();
-  const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'finances'>('products');
+  const [activeTab, setActiveTab] = useState<'products' | 'orders' | 'finances' | 'promos'>('products');
   const [searchQuery, setSearchQuery] = useState('');
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | undefined>();
@@ -1752,6 +2263,19 @@ function AdminDashboard() {
             <div className="flex items-center gap-2">
               <Wallet className="w-5 h-5" />
               Finances
+            </div>
+          </button>
+          <button
+            onClick={() => setActiveTab('promos')}
+            className={`px-6 py-3 font-medium transition-colors border-b-2 ${
+              activeTab === 'promos'
+                ? 'border-amber-500 text-amber-600'
+                : 'border-transparent text-stone-500 hover:text-stone-700'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Tag className="w-5 h-5" />
+              Promos
             </div>
           </button>
         </div>
@@ -1947,6 +2471,9 @@ function AdminDashboard() {
 
         {/* Finances Tab */}
         {activeTab === 'finances' && <FinancesManagement />}
+
+        {/* Promos Tab */}
+        {activeTab === 'promos' && <PromoManagement />}
       </main>
 
       {/* Product Form Modal */}

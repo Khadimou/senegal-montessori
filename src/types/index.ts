@@ -118,3 +118,33 @@ export interface FinancialStats {
     percentage: number;
   }>;
 }
+
+// Types pour les codes promo
+export type DiscountType = 'percentage' | 'fixed';
+
+export interface PromoCode {
+  id: string;
+  code: string;
+  description?: string;
+  discount_type: DiscountType;
+  discount_value: number;          // Pourcentage ou montant fixe
+  min_order_amount: number;        // Montant minimum de commande
+  max_discount?: number;           // Plafond de réduction (pour les %)
+  usage_limit?: number;            // Limite d'utilisation
+  usage_count: number;             // Utilisations actuelles
+  starts_at: string;
+  expires_at?: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PromoCodeValidation {
+  is_valid: boolean;
+  error_message?: string;
+  promo_id?: string;
+  discount_type?: DiscountType;
+  discount_value?: number;
+  max_discount?: number;
+  calculated_discount?: number;
+}
