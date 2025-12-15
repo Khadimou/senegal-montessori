@@ -14,11 +14,17 @@ import {
   CreditCard,
   Loader2,
   ShoppingBag,
-  Check
+  Check,
+  Tag,
+  X,
+  Percent,
+  Gift
 } from 'lucide-react';
 import { useCartStore } from '@/store/cart';
+import { usePromoStore } from '@/store/promo';
 import { formatPrice } from '@/data/products';
 import { PaymentMethod } from '@/lib/naboopay';
+import { PromoCodeValidation } from '@/types';
 
 const paymentMethods: { id: PaymentMethod; name: string; icon: string; color: string }[] = [
   { id: 'WAVE', name: 'Wave', icon: '🌊', color: 'bg-blue-500' },
@@ -30,10 +36,17 @@ const paymentMethods: { id: PaymentMethod; name: string; icon: string; color: st
 export default function CheckoutPage() {
   const router = useRouter();
   const { items, getTotalPrice, clearCart } = useCartStore();
+  const { validatePromoCode } = usePromoStore();
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>('WAVE');
+  
+  // États pour le code promo
+  const [promoCode, setPromoCode] = useState('');
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [promoError, setPromoError] = useState<string | null>(null);
+  const [appliedPromo, setAppliedPromo] = useState<PromoCodeValidation | null>(null);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -45,6 +58,34 @@ export default function CheckoutPage() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Fonction pour valider le code promo
+  const handleApplyPromo = async () => {
+    if (!promoCode.trim()) return;
+    
+    setPromoLoading(true);
+    setPromoError(null);
+    
+    const subtotal = getTotalPrice();
+    const validation = await validatePromoCode(promoCode, subtotal, formData.email || 'client@email.com');
+    
+    if (validation.is_valid) {
+      setAppliedPromo(validation);
+      setPromoError(null);
+    } else {
+      setPromoError(validation.error_message || 'Code invalide');
+      setAppliedPromo(null);
+    }
+    
+    setPromoLoading(false);
+  };
+
+  // Fonction pour retirer le code promo
+  const handleRemovePromo = () => {
+    setAppliedPromo(null);
+    setPromoCode('');
+    setPromoError(null);
+  };
 
   if (!mounted) {
     return (
@@ -79,7 +120,8 @@ export default function CheckoutPage() {
   const subtotal = getTotalPrice();
   const shipping = subtotal > 10000 ? 0 : 3000; // Livraison gratuite à partir de 10,000 FCFA
   // Les frais NabooPay sont déjà inclus dans les prix des produits
-  const total = subtotal + shipping;
+  const discount = appliedPromo?.calculated_discount || 0;
+  const total = subtotal + shipping - discount;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,6 +145,12 @@ export default function CheckoutPage() {
             description: item.description,
           })),
           paymentMethod: selectedPayment,
+          // Informations code promo
+          promoCode: appliedPromo ? {
+            id: appliedPromo.promo_id,
+            code: promoCode,
+            discount: discount,
+          } : null,
         }),
       });
 
@@ -314,6 +362,68 @@ export default function CheckoutPage() {
                   ))}
                 </div>
 
+                {/* Code promo */}
+                <div className="border-t border-stone-100 pt-4 mb-4">
+                  <h3 className="text-sm font-semibold text-stone-700 mb-3 flex items-center gap-2">
+                    <Tag className="w-4 h-4 text-amber-500" />
+                    Code promo
+                  </h3>
+                  
+                  {appliedPromo ? (
+                    <div className="p-3 bg-emerald-50 border border-emerald-200 rounded-xl">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <Gift className="w-5 h-5 text-emerald-600" />
+                          <div>
+                            <span className="font-mono font-bold text-emerald-700">{promoCode}</span>
+                            <p className="text-xs text-emerald-600">
+                              {appliedPromo.discount_type === 'percentage' 
+                                ? `${appliedPromo.discount_value}% de réduction`
+                                : `${formatPrice(appliedPromo.discount_value || 0)} de réduction`
+                              }
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleRemovePromo}
+                          className="p-1 text-emerald-600 hover:text-red-500 transition-colors"
+                          title="Retirer le code"
+                        >
+                          <X className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={promoCode}
+                          onChange={(e) => setPromoCode(e.target.value.toUpperCase())}
+                          onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), handleApplyPromo())}
+                          placeholder="Entrez votre code"
+                          className="flex-1 px-4 py-2 rounded-xl border border-stone-200 focus:outline-none focus:ring-2 focus:ring-amber-500 font-mono uppercase text-sm"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleApplyPromo}
+                          disabled={promoLoading || !promoCode.trim()}
+                          className="px-4 py-2 bg-amber-100 text-amber-700 rounded-xl font-medium hover:bg-amber-200 transition-colors disabled:opacity-50 text-sm"
+                        >
+                          {promoLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Appliquer'}
+                        </button>
+                      </div>
+                      {promoError && (
+                        <p className="text-xs text-red-600 flex items-center gap-1">
+                          <X className="w-3 h-3" />
+                          {promoError}
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </div>
+
                 {/* Totaux */}
                 <div className="border-t border-stone-100 pt-4 space-y-3">
                   <div className="flex justify-between text-stone-600">
@@ -324,6 +434,15 @@ export default function CheckoutPage() {
                     <span>Livraison</span>
                     <span>{shipping === 0 ? 'Gratuite' : formatPrice(shipping)}</span>
                   </div>
+                  {appliedPromo && discount > 0 && (
+                    <div className="flex justify-between text-emerald-600">
+                      <span className="flex items-center gap-1">
+                        <Percent className="w-4 h-4" />
+                        Réduction
+                      </span>
+                      <span>-{formatPrice(discount)}</span>
+                    </div>
+                  )}
                   {shipping > 0 && (
                     <div className="space-y-2">
                       <p className="text-xs text-stone-500">

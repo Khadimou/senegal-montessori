@@ -18,12 +18,17 @@ interface CheckoutRequestBody {
     description?: string;
   }>;
   paymentMethod: PaymentMethod;
+  promoCode?: {
+    id: string;
+    code: string;
+    discount: number;
+  } | null;
 }
 
 export async function POST(request: NextRequest) {
   try {
     const body: CheckoutRequestBody = await request.json();
-    const { customer, items, paymentMethod } = body;
+    const { customer, items, paymentMethod, promoCode } = body;
 
     // Validation
     if (!customer || !customer.name || !customer.email || !customer.phone || !customer.address) {
@@ -41,10 +46,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculer le total (prix affiché au client)
-    const total = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const discount = promoCode?.discount || 0;
+    const total = Math.max(0, subtotal - discount);
+
+    // Si un code promo est utilisé, incrémenter son compteur
+    if (promoCode?.id) {
+      const { error: promoError } = await supabase.rpc('increment_promo_usage', { 
+        promo_id: promoCode.id 
+      });
+      
+      if (promoError) {
+        console.log('[Checkout] Erreur increment promo (fallback manuel):', promoError);
+        // Fallback: mise à jour manuelle
+        await supabase
+          .from('promo_codes')
+          .update({ used_count: supabase.sql`used_count + 1` })
+          .eq('id', promoCode.id);
+      }
+    }
 
     // 1. Créer la commande dans Supabase avec statut "pending"
-    const orderData = {
+    const orderData: Record<string, unknown> = {
       customer_name: customer.name,
       customer_email: customer.email,
       customer_phone: customer.phone,
@@ -55,10 +78,18 @@ export async function POST(request: NextRequest) {
         quantity: item.quantity,
         price: item.price,
       })),
+      subtotal,
+      discount_amount: discount,
       total,
       status: 'pending',
       payment_method: paymentMethod,
     };
+
+    // Ajouter les infos du code promo si présent
+    if (promoCode) {
+      orderData.promo_code_id = promoCode.id;
+      orderData.promo_code = promoCode.code;
+    }
 
     const { data: order, error: orderError } = await supabase
       .from('orders')
@@ -127,10 +158,9 @@ export async function POST(request: NextRequest) {
     const nabooProducts = formatCartForNabooPay(adjustedItems);
     
     // Log pour debug
-    const originalTotal = total;
     const adjustedTotal = adjustedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const estimatedFees = Math.round(adjustedTotal * NABOOPAY_FEE_RATE);
-    console.log(`[Checkout] Prix affiché: ${originalTotal} FCFA, Montant NabooPay: ${adjustedTotal} FCFA, Frais estimés: ${estimatedFees} FCFA, Total payé: ${adjustedTotal + estimatedFees} FCFA`);
+    console.log(`[Checkout] Sous-total: ${subtotal} FCFA, Réduction: ${discount} FCFA, Total: ${total} FCFA, Montant NabooPay: ${adjustedTotal} FCFA, Frais estimés: ${estimatedFees} FCFA`);
 
     const nabooResponse = await naboopay.createTransaction(
       nabooProducts,
