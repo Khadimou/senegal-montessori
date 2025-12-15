@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { sendEmail, getContactNotificationEmail } from '@/lib/brevo';
+
+// Email où recevoir les notifications
+const CONTACT_EMAIL = 'contact@senegal-montessori.store';
 
 interface ContactRequestBody {
   name: string;
@@ -42,6 +46,21 @@ export async function POST(request: NextRequest) {
       if (error.code === '42P01') {
         console.log('Table contact_messages non trouvée. Créez-la avec le schéma SQL.');
       }
+    }
+
+    // Envoyer une notification par email via Brevo
+    const { html, text } = getContactNotificationEmail({ name, email, phone, subject, message });
+    
+    const emailResult = await sendEmail({
+      to: [{ email: CONTACT_EMAIL, name: 'Sénégal Montessori' }],
+      subject: `[Contact] ${subject} - ${name}`,
+      htmlContent: html,
+      textContent: text,
+      replyTo: { email, name },
+    });
+
+    if (!emailResult.success) {
+      console.warn('[Contact] Email non envoyé:', emailResult.error);
     }
 
     console.log(`[Contact] Nouveau message de ${name} (${email}) - Sujet: ${subject}`);
