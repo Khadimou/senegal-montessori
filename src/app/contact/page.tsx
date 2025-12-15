@@ -14,17 +14,35 @@ export default function ContactPage() {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
+    setError(null);
     
-    // Simulate form submission
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    setIsSubmitting(false);
-    setIsSubmitted(true);
-    setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Erreur lors de l\'envoi');
+      }
+
+      setIsSubmitted(true);
+      setFormData({ name: '', email: '', phone: '', subject: '', message: '' });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -94,8 +112,8 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-stone-800">Email</h3>
-                    <a href="mailto:contact@montessori-senegal.com" className="text-stone-600 hover:text-amber-600 transition-colors">
-                      contact@montessori-senegal.com
+                    <a href="mailto:contact@senegal-montessori.store" className="text-stone-600 hover:text-amber-600 transition-colors">
+                      contact@senegal-montessori.store
                     </a>
                   </div>
                 </div>
@@ -252,6 +270,12 @@ export default function ContactPage() {
                       placeholder="Votre message..."
                     />
                   </div>
+
+                  {error && (
+                    <div className="p-4 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm">
+                      {error}
+                    </div>
+                  )}
 
                   <button
                     type="submit"
