@@ -41,6 +41,20 @@ export default function ProductPage({ params }: ProductPageProps) {
     }
   }, [lastFetch, fetchProducts]);
 
+  const product = products.find(p => p.id === id);
+
+  // Track product view
+  useEffect(() => {
+    if (product) {
+      analytics.viewProduct({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        category: product.category,
+      });
+    }
+  }, [product]);
+
   // Afficher le chargement si les produits ne sont pas encore chargés
   if (!mounted || (isLoading && products.length === 0) || (!lastFetch && products.length === 0)) {
     return (
@@ -52,8 +66,6 @@ export default function ProductPage({ params }: ProductPageProps) {
       </div>
     );
   }
-
-  const product = products.find(p => p.id === id);
 
   // Seulement afficher 404 si les produits sont chargés mais le produit n'existe pas
   if (!product && lastFetch) {
@@ -71,18 +83,6 @@ export default function ProductPage({ params }: ProductPageProps) {
       </div>
     );
   }
-
-  // Track product view
-  useEffect(() => {
-    if (product) {
-      analytics.viewProduct({
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        category: product.category,
-      });
-    }
-  }, [product]);
 
   const relatedProducts = products
     .filter(p => p.category === product.category && p.id !== product.id)
