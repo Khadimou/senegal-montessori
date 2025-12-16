@@ -148,3 +148,20 @@ export interface PromoCodeValidation {
   max_discount?: number;
   calculated_discount?: number;
 }
+
+// Demandes de précommande
+export type PreorderRequestStatus = 'pending' | 'contacted' | 'converted' | 'cancelled';
+
+export interface PreorderRequest {
+  id: string;
+  product_id: string;
+  product_name: string;
+  customer_name: string;
+  customer_email: string;
+  customer_phone?: string;
+  quantity_requested: number;
+  status: PreorderRequestStatus;
+  admin_notes?: string;
+  created_at: string;
+  updated_at: string;
+}

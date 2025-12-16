@@ -19,9 +19,11 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
   const handleAddToCart = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    // Permettre l'ajout même si rupture (précommande)
-    addItem(product);
-    openCart();
+    // Seulement si en stock
+    if (product.inStock) {
+      addItem(product);
+      openCart();
+    }
   };
 
   return (
@@ -58,7 +60,7 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
               {!product.inStock && (
                 <span className="px-3 py-1 bg-purple-600 text-white text-xs font-medium rounded-full flex items-center gap-1">
                   <Clock className="w-3 h-3" />
-                  Précommande
+                  Rupture de stock
                 </span>
               )}
               <span className="px-3 py-1 bg-amber-500 text-white text-xs font-medium rounded-full">
@@ -68,19 +70,17 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
 
             {/* Quick Actions */}
             <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">
-              <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleAddToCart}
-                className={`w-12 h-12 bg-white rounded-xl flex items-center justify-center transition-colors ${
-                  product.inStock 
-                    ? 'text-amber-600 hover:bg-amber-500 hover:text-white' 
-                    : 'text-purple-600 hover:bg-purple-500 hover:text-white'
-                }`}
-                aria-label={product.inStock ? "Ajouter au panier" : "Précommander"}
-              >
-                {product.inStock ? <ShoppingBag className="w-5 h-5" /> : <Clock className="w-5 h-5" />}
-              </motion.button>
+              {product.inStock && (
+                <motion.button
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={handleAddToCart}
+                  className="w-12 h-12 bg-white rounded-xl flex items-center justify-center text-amber-600 hover:bg-amber-500 hover:text-white transition-colors"
+                  aria-label="Ajouter au panier"
+                >
+                  <ShoppingBag className="w-5 h-5" />
+                </motion.button>
+              )}
               <motion.div
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
@@ -123,8 +123,8 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
                     ✓ En stock
                   </span>
                 ) : (
-                  <span className="text-xs text-purple-600 font-medium bg-purple-50 px-2 py-1 rounded-full">
-                    ⏳ Précommande
+                  <span className="text-xs text-stone-500 font-medium bg-stone-100 px-2 py-1 rounded-full">
+                    Indisponible
                   </span>
                 )}
               </div>

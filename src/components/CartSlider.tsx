@@ -1,7 +1,7 @@
 'use client';
 
 import { Fragment } from 'react';
-import { X, Plus, Minus, ShoppingBag, Trash2, Clock } from 'lucide-react';
+import { X, Plus, Minus, ShoppingBag, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Image from 'next/image';
 import Link from 'next/link';
@@ -94,15 +94,7 @@ export default function CartSlider() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h4 className="font-medium text-stone-800 truncate">{item.name}</h4>
-                        <div className="flex items-center gap-2">
-                          <p className="text-amber-600 font-semibold">{formatPrice(item.price)}</p>
-                          {!item.inStock && (
-                            <span className="text-xs bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              Précommande
-                            </span>
-                          )}
-                        </div>
+                        <p className="text-amber-600 font-semibold">{formatPrice(item.price)}</p>
                         <div className="flex items-center gap-2 mt-2">
                           <button
                             onClick={() => updateQuantity(item.id, item.quantity - 1)}
