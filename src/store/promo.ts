@@ -234,9 +234,6 @@ export const usePromoStore = create<PromoState>((set, get) => ({
       }]);
 
       // Incrémenter le compteur d'utilisation
-      await supabase.rpc('increment_promo_usage', { promo_id: promoCodeId });
-      
-      // Alternative si la fonction RPC n'existe pas
       const { data: promo } = await supabase
         .from('promo_codes')
         .select('usage_count')

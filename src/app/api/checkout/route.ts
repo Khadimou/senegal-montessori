@@ -52,25 +52,30 @@ export async function POST(request: NextRequest) {
 
     // Si un code promo est utilisé, incrémenter son compteur
     if (promoCode?.id) {
-      const { error: promoError } = await supabase.rpc('increment_promo_usage', { 
-        promo_id: promoCode.id 
-      });
-      
-      if (promoError) {
-        console.log('[Checkout] Erreur increment promo (fallback manuel):', promoError);
-        // Fallback: récupérer la valeur actuelle et incrémenter
-        const { data: currentPromo } = await supabase
+      try {
+        // Récupérer la valeur actuelle
+        const { data: currentPromo, error: fetchError } = await supabase
           .from('promo_codes')
           .select('usage_count')
           .eq('id', promoCode.id)
           .single();
         
-        if (currentPromo) {
-          await supabase
+        if (fetchError) {
+          console.error('[Checkout] Erreur récupération promo:', fetchError);
+        } else if (currentPromo) {
+          // Incrémenter
+          const { error: updateError } = await supabase
             .from('promo_codes')
             .update({ usage_count: (currentPromo.usage_count || 0) + 1 })
             .eq('id', promoCode.id);
+          
+          if (updateError) {
+            console.error('[Checkout] Erreur incrémentation promo:', updateError);
+          }
         }
+      } catch (error) {
+        console.error('[Checkout] Erreur promo:', error);
+        // Ne pas bloquer la commande si l'incrémentation échoue
       }
     }
 
