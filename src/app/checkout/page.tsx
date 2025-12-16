@@ -163,6 +163,7 @@ export default function CheckoutPage() {
             description: item.description,
           })),
           paymentMethod: selectedPayment,
+          shipping: shipping, // Ajouter les frais de livraison
           // Informations code promo
           promoCode: appliedPromo ? {
             id: appliedPromo.promo_id,

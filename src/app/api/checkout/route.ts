@@ -18,6 +18,7 @@ interface CheckoutRequestBody {
     description?: string;
   }>;
   paymentMethod: PaymentMethod;
+  shipping?: number;
   promoCode?: {
     id: string;
     code: string;
@@ -28,7 +29,7 @@ interface CheckoutRequestBody {
 export async function POST(request: NextRequest) {
   try {
     const body: CheckoutRequestBody = await request.json();
-    const { customer, items, paymentMethod, promoCode } = body;
+    const { customer, items, paymentMethod, shipping, promoCode } = body;
 
     // Validation
     if (!customer || !customer.name || !customer.email || !customer.phone || !customer.address) {
@@ -47,8 +48,9 @@ export async function POST(request: NextRequest) {
 
     // Calculer le total (prix affiché au client)
     const subtotal = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const shippingCost = shipping || 0;
     const discount = promoCode?.discount || 0;
-    const total = Math.max(0, subtotal - discount);
+    const total = Math.max(0, subtotal + shippingCost - discount);
 
     // Si un code promo est utilisé, incrémenter son compteur
     if (promoCode?.id) {
@@ -208,21 +210,45 @@ export async function POST(request: NextRequest) {
     // - Montant envoyé à NabooPay = M
     // - Frais NabooPay = M * 0.02
     // - Total payé = M + (M * 0.02) = M * 1.02
-    // On veut : M * 1.02 = P (prix affiché)
+    // On veut : M * 1.02 = P (prix affiché AVEC réduction)
     // Donc : M = P / 1.02
     const NABOOPAY_FEE_RATE = 0.02; // 2% de frais
     
+    // IMPORTANT: Utiliser le total AVEC la réduction du code promo ET la livraison
+    const targetAmount = total; // Le montant final que le client doit payer
+    const nabooAmount = Math.round(targetAmount / (1 + NABOOPAY_FEE_RATE));
+    
+    // Ajuster les prix des items proportionnellement pour atteindre le montant cible
+    const baseTotal = subtotal + shippingCost; // Total avant réduction
+    const ratio = nabooAmount / baseTotal; // Ratio de réduction global
+    
     const adjustedItems = items.map(item => ({
       ...item,
-      price: Math.round(item.price / (1 + NABOOPAY_FEE_RATE)) // Réduire de 2% pour absorber les frais
+      price: Math.round(item.price * ratio)
     }));
     
-    const nabooProducts = formatCartForNabooPay(adjustedItems);
+    // Ajouter les frais de livraison comme un item si > 0
+    const allItems = [...adjustedItems];
+    if (shippingCost > 0) {
+      allItems.push({
+        id: 'shipping',
+        name: 'Frais de livraison',
+        price: Math.round(shippingCost * ratio),
+        quantity: 1,
+        category: 'shipping',
+      });
+    }
+    
+    const nabooProducts = formatCartForNabooPay(allItems);
     
     // Log pour debug
-    const adjustedTotal = adjustedItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const adjustedTotal = allItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
     const estimatedFees = Math.round(adjustedTotal * NABOOPAY_FEE_RATE);
-    console.log(`[Checkout] Sous-total: ${subtotal} FCFA, Réduction: ${discount} FCFA, Total: ${total} FCFA, Montant NabooPay: ${adjustedTotal} FCFA, Frais estimés: ${estimatedFees} FCFA`);
+    const finalAmount = adjustedTotal + estimatedFees;
+    console.log(`[Checkout] Sous-total: ${subtotal} FCFA, Livraison: ${shippingCost} FCFA, Réduction: ${discount} FCFA`);
+    console.log(`[Checkout] Total: ${total} FCFA`);
+    console.log(`[Checkout] Montant NabooPay: ${adjustedTotal} FCFA, Frais NabooPay: ${estimatedFees} FCFA`);
+    console.log(`[Checkout] Total final client: ${finalAmount} FCFA (devrait être ≈ ${total})`);
 
     const nabooResponse = await naboopay.createTransaction(
       nabooProducts,
