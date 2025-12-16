@@ -268,7 +268,7 @@ export function getOrderConfirmationEmail(data: {
 
       <div class="info-box" style="background: #fef3c7; border-color: #f59e0b;">
         <p style="color: #92400e;"><strong>💡 Besoin d'aide ?</strong></p>
-        <p style="color: #92400e;">Contactez-nous au +221 77 123 45 67 ou par email à contact@senegal-montessori.store</p>
+        <p style="color: #92400e;">Contactez-nous au +221 71 115 07 63 ou par email à contact@senegal-montessori.store</p>
       </div>
 
       <center>
@@ -281,7 +281,7 @@ export function getOrderConfirmationEmail(data: {
     <div class="footer">
       <p><strong>Montessori Sénégal</strong></p>
       <p>Almadies, Dakar - Sénégal</p>
-      <p>+221 77 123 45 67</p>
+      <p>+221 71 115 07 63</p>
       <p style="margin-top: 20px; font-size: 12px; color: #9ca3af;">
         Vous recevez cet email car vous avez passé commande sur senegal-montessori.store
       </p>
@@ -317,7 +317,7 @@ TOTAL PAYÉ : ${data.total.toLocaleString()} FCFA
 Prochaine étape : Notre équipe vous contactera dans les 24-48h pour la livraison.
 
 Besoin d'aide ? Contactez-nous :
-+221 77 123 45 67
++221 71 115 07 63
 contact@senegal-montessori.store
 
 Montessori Sénégal

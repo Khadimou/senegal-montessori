@@ -101,7 +101,7 @@ export default function ContactPage() {
                   <div>
                     <h3 className="font-semibold text-stone-800">Téléphone</h3>
                     <a href="tel:+221711150763" className="text-stone-600 hover:text-amber-600 transition-colors">
-                      +221 77 123 45 67
+                      +221 71 115 07 63
                     </a>
                   </div>
                 </div>
