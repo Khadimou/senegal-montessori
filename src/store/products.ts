@@ -16,24 +16,31 @@ interface ProductsState {
 }
 
 // Convertir du format DB vers le format App
-const dbToProduct = (db: DbProduct): Product => ({
-  id: db.id,
-  name: db.name,
-  description: db.description,
-  price: db.price,
-  images: db.images || [],
-  image: db.images?.[0] || '',
-  category: db.category,
-  ageRange: db.age_range,
-  inStock: db.in_stock,
-  features: db.features || [],
-  // Champs financiers
-  costPrice: db.cost_price || 0,
-  stockQuantity: db.stock_quantity || 0,
-  minStockAlert: db.min_stock_alert || 5,
-  supplier: db.supplier,
-  totalSold: db.total_sold || 0,
-});
+const dbToProduct = (db: DbProduct): Product => {
+  // Si stockQuantity est défini, inStock est automatiquement déterminé par le stock
+  const stockQuantity = db.stock_quantity || 0;
+  const hasStockManagement = db.stock_quantity !== null && db.stock_quantity !== undefined;
+  const inStock = hasStockManagement ? stockQuantity > 0 : db.in_stock;
+
+  return {
+    id: db.id,
+    name: db.name,
+    description: db.description,
+    price: db.price,
+    images: db.images || [],
+    image: db.images?.[0] || '',
+    category: db.category,
+    ageRange: db.age_range,
+    inStock,
+    features: db.features || [],
+    // Champs financiers
+    costPrice: db.cost_price || 0,
+    stockQuantity,
+    minStockAlert: db.min_stock_alert || 5,
+    supplier: db.supplier,
+    totalSold: db.total_sold || 0,
+  };
+};
 
 // Convertir les produits statiques vers le nouveau format avec images array
 const convertStaticProducts = (): Product[] => {

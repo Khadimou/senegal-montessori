@@ -104,13 +104,24 @@ export default function ProductCard({ product, index = 0 }: ProductCardProps) {
                 <span className="text-xl font-bold text-amber-600">
                   {formatPrice(product.price)}
                 </span>
-                {product.inStock ? (
+                {product.stockQuantity !== undefined && product.stockQuantity > 0 ? (
+                  <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                    product.stockQuantity <= 3 
+                      ? 'text-orange-600 bg-orange-50' 
+                      : 'text-emerald-600 bg-emerald-50'
+                  }`}>
+                    {product.stockQuantity <= 3 
+                      ? `⚠️ Plus que ${product.stockQuantity}` 
+                      : `✓ ${product.stockQuantity} en stock`
+                    }
+                  </span>
+                ) : product.inStock ? (
                   <span className="text-xs text-emerald-600 font-medium bg-emerald-50 px-2 py-1 rounded-full">
                     ✓ En stock
                   </span>
                 ) : (
                   <span className="text-xs text-stone-500 font-medium bg-stone-100 px-2 py-1 rounded-full">
-                    Indisponible
+                    Rupture de stock
                   </span>
                 )}
               </div>

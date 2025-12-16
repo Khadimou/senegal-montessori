@@ -73,11 +73,38 @@ export async function POST(request: NextRequest) {
 
     console.log(`[Webhook] Commande ${order.id} mise à jour: ${transaction_status} -> ${orderStatus}`);
 
-    // Ici vous pouvez ajouter :
-    // - Envoi d'email de confirmation
-    // - Notification SMS
-    // - Mise à jour du stock
-    // etc.
+    // Décrémenter le stock si le paiement est confirmé
+    if (transaction_status === 'paid' || transaction_status === 'done') {
+      const items = order.items as Array<{ product_id: string; quantity: number }>;
+      
+      for (const item of items) {
+        // Récupérer le stock actuel
+        const { data: product } = await supabase
+          .from('products')
+          .select('stock_quantity')
+          .eq('id', item.product_id)
+          .single();
+        
+        if (product) {
+          const newStock = Math.max(0, (product.stock_quantity || 0) - item.quantity);
+          
+          // Mettre à jour le stock
+          const { error: stockError } = await supabase
+            .from('products')
+            .update({ 
+              stock_quantity: newStock,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', item.product_id);
+          
+          if (stockError) {
+            console.error(`[Webhook] Erreur mise à jour stock produit ${item.product_id}:`, stockError);
+          } else {
+            console.log(`[Webhook] Stock produit ${item.product_id} mis à jour: -${item.quantity} (nouveau stock: ${newStock})`);
+          }
+        }
+      }
+    }
 
     return NextResponse.json({
       success: true,

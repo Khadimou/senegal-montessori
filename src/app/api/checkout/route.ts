@@ -131,6 +131,27 @@ export async function POST(request: NextRequest) {
         })
         .eq('id', order.id);
 
+      // Décrémenter le stock en mode dev
+      for (const item of items) {
+        const { data: product } = await supabase
+          .from('products')
+          .select('stock_quantity')
+          .eq('id', item.id)
+          .single();
+        
+        if (product) {
+          const newStock = Math.max(0, (product.stock_quantity || 0) - item.quantity);
+          await supabase
+            .from('products')
+            .update({ 
+              stock_quantity: newStock,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', item.id);
+          console.log(`[Checkout DEV] Stock ${item.name}: -${item.quantity} (nouveau: ${newStock})`);
+        }
+      }
+
       return NextResponse.json({
         success: true,
         order_id: order.id,
