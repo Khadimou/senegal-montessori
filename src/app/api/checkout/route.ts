@@ -60,11 +60,19 @@ export async function POST(request: NextRequest) {
       
       if (promoError) {
         console.log('[Checkout] Erreur increment promo (fallback manuel):', promoError);
-        // Fallback: mise à jour manuelle
-        await supabase
+        // Fallback: récupérer la valeur actuelle et incrémenter
+        const { data: currentPromo } = await supabase
           .from('promo_codes')
-          .update({ used_count: supabase.sql`used_count + 1` })
-          .eq('id', promoCode.id);
+          .select('usage_count')
+          .eq('id', promoCode.id)
+          .single();
+        
+        if (currentPromo) {
+          await supabase
+            .from('promo_codes')
+            .update({ usage_count: (currentPromo.usage_count || 0) + 1 })
+            .eq('id', promoCode.id);
+        }
       }
     }
 
