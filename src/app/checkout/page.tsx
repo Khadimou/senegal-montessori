@@ -143,6 +143,8 @@ export default function CheckoutPage() {
             quantity: item.quantity,
             category: item.category,
             description: item.description,
+            stockQuantity: item.stockQuantity,
+            inStock: item.inStock,
           })),
           paymentMethod: selectedPayment,
           // Informations code promo

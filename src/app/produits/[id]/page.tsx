@@ -4,7 +4,7 @@ import { use, useState, useEffect } from 'react';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowLeft, ShoppingBag, Truck, ShieldCheck, RotateCcw, Check, Minus, Plus } from 'lucide-react';
+import { ArrowLeft, ShoppingBag, Truck, ShieldCheck, RotateCcw, Check, Minus, Plus, Clock } from 'lucide-react';
 import { formatPrice } from '@/data/products';
 import { useCartStore } from '@/store/cart';
 import { useProductsStore } from '@/store/products';
@@ -103,8 +103,9 @@ export default function ProductPage({ params }: ProductPageProps) {
           >
             <ImageGallery images={productImages} alt={product.name} />
             {!product.inStock && (
-              <div className="absolute top-4 left-4 px-4 py-2 bg-stone-800 text-white font-medium rounded-xl">
-                Rupture de stock
+              <div className="absolute top-4 left-4 px-4 py-2 bg-amber-600 text-white font-medium rounded-xl flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                Précommande disponible
               </div>
             )}
           </motion.div>
@@ -149,6 +150,37 @@ export default function ProductPage({ params }: ProductPageProps) {
               </ul>
             </div>
 
+            {/* Info précommande si rupture */}
+            {!product.inStock && (
+              <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
+                <div className="flex items-start gap-3">
+                  <Clock className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-semibold text-amber-800">Précommande disponible</p>
+                    <p className="text-sm text-amber-700 mt-1">
+                      Ce produit est actuellement en rupture de stock. Précommandez-le maintenant et recevez-le dès qu&apos;il sera disponible (délai estimé: 1-2 semaines).
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Stock disponible */}
+            {product.inStock && product.stockQuantity !== undefined && product.stockQuantity > 0 && (
+              <div className="mt-6">
+                <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${
+                  product.stockQuantity <= 3 
+                    ? 'bg-orange-100 text-orange-700' 
+                    : 'bg-emerald-100 text-emerald-700'
+                }`}>
+                  {product.stockQuantity <= 3 
+                    ? `⚠️ Plus que ${product.stockQuantity} en stock` 
+                    : `✓ ${product.stockQuantity} en stock`
+                  }
+                </span>
+              </div>
+            )}
+
             {/* Quantity & Add to Cart */}
             <div className="mt-8 flex flex-col sm:flex-row gap-4">
               <div className="flex items-center gap-3 bg-white rounded-xl border border-stone-200 px-4 py-2">
@@ -173,11 +205,23 @@ export default function ProductPage({ params }: ProductPageProps) {
 
               <button
                 onClick={handleAddToCart}
-                disabled={!product.inStock}
-                className="flex-1 flex items-center justify-center gap-3 px-8 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold hover:from-amber-600 hover:to-orange-600 transition-all shadow-lg shadow-amber-500/25 disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`flex-1 flex items-center justify-center gap-3 px-8 py-4 rounded-xl font-semibold transition-all shadow-lg ${
+                  product.inStock 
+                    ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 shadow-amber-500/25' 
+                    : 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:from-purple-600 hover:to-indigo-600 shadow-purple-500/25'
+                }`}
               >
-                <ShoppingBag className="w-5 h-5" />
-                Ajouter au panier
+                {product.inStock ? (
+                  <>
+                    <ShoppingBag className="w-5 h-5" />
+                    Ajouter au panier
+                  </>
+                ) : (
+                  <>
+                    <Clock className="w-5 h-5" />
+                    Précommander
+                  </>
+                )}
               </button>
             </div>
 

@@ -16,6 +16,8 @@ interface CheckoutRequestBody {
     quantity: number;
     category: string;
     description?: string;
+    stockQuantity?: number;
+    inStock?: boolean;
   }>;
   paymentMethod: PaymentMethod;
   promoCode?: {
@@ -66,6 +68,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Vérifier si la commande contient des précommandes
+    const hasPreorders = items.some(item => {
+      // Un item est en précommande si stockQuantity <= 0 ou si inStock est false
+      return item.stockQuantity !== undefined ? item.stockQuantity <= 0 : false;
+    });
+
     // 1. Créer la commande dans Supabase avec statut "pending"
     const orderData: Record<string, unknown> = {
       customer_name: customer.name,
@@ -77,12 +85,14 @@ export async function POST(request: NextRequest) {
         product_name: item.name,
         quantity: item.quantity,
         price: item.price,
+        is_preorder: item.stockQuantity !== undefined ? item.stockQuantity <= 0 : false,
       })),
       subtotal,
       discount_amount: discount,
       total,
       status: 'pending',
       payment_method: paymentMethod,
+      has_preorders: hasPreorders,
     };
 
     // Ajouter les infos du code promo si présent
