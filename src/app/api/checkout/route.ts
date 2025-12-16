@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { naboopay, formatCartForNabooPay, PaymentMethod } from '@/lib/naboopay';
 import { supabase } from '@/lib/supabase';
+import { sendEmail, getOrderConfirmationEmail } from '@/lib/brevo';
 
 interface CheckoutRequestBody {
   customer: {
@@ -193,6 +194,39 @@ export async function POST(request: NextRequest) {
             .eq('id', item.id);
           console.log(`[Checkout DEV] Stock ${item.name}: -${item.quantity} (nouveau: ${newStock})`);
         }
+      }
+
+      // Envoyer l'email de confirmation en mode dev
+      try {
+        const { html, text } = getOrderConfirmationEmail({
+          customerName: customer.name,
+          orderId: order.id,
+          items: items.map(item => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          subtotal,
+          shipping: shippingCost,
+          discount,
+          total,
+          promoCode: promoCode?.code,
+        });
+
+        const emailResult = await sendEmail({
+          to: [{ email: customer.email, name: customer.name }],
+          subject: `Confirmation de commande #${order.id.slice(0, 8).toUpperCase()} - Montessori Sénégal`,
+          htmlContent: html,
+          textContent: text,
+        });
+
+        if (emailResult.success) {
+          console.log(`[Checkout DEV] Email de confirmation envoyé à ${customer.email}`);
+        } else {
+          console.error(`[Checkout DEV] Erreur envoi email:`, emailResult.error);
+        }
+      } catch (emailError) {
+        console.error('[Checkout DEV] Erreur lors de l\'envoi de l\'email:', emailError);
       }
 
       return NextResponse.json({

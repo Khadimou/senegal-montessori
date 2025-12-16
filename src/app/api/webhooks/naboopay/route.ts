@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabase } from '@/lib/supabase';
+import { sendEmail, getOrderConfirmationEmail } from '@/lib/brevo';
 
 interface WebhookPayload {
   order_id: string;
@@ -75,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     // Décrémenter le stock si le paiement est confirmé
     if (transaction_status === 'paid' || transaction_status === 'done') {
-      const items = order.items as Array<{ product_id: string; quantity: number }>;
+      const items = order.items as Array<{ product_id: string; product_name: string; quantity: number; price: number }>;
       
       for (const item of items) {
         // Récupérer le stock actuel
@@ -103,6 +104,40 @@ export async function POST(request: NextRequest) {
             console.log(`[Webhook] Stock produit ${item.product_id} mis à jour: -${item.quantity} (nouveau stock: ${newStock})`);
           }
         }
+      }
+
+      // Envoyer l'email de confirmation
+      try {
+        const { html, text } = getOrderConfirmationEmail({
+          customerName: order.customer_name,
+          orderId: order.id,
+          items: items.map(item => ({
+            name: item.product_name,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          subtotal: order.subtotal || order.total,
+          shipping: (order.total - (order.subtotal || order.total)) + (order.discount_amount || 0), // Calculer les frais de livraison
+          discount: order.discount_amount || 0,
+          total: order.total,
+          promoCode: order.promo_code,
+        });
+
+        const emailResult = await sendEmail({
+          to: [{ email: order.customer_email, name: order.customer_name }],
+          subject: `Confirmation de commande #${order.id.slice(0, 8).toUpperCase()} - Montessori Sénégal`,
+          htmlContent: html,
+          textContent: text,
+        });
+
+        if (emailResult.success) {
+          console.log(`[Webhook] Email de confirmation envoyé à ${order.customer_email}`);
+        } else {
+          console.error(`[Webhook] Erreur envoi email:`, emailResult.error);
+        }
+      } catch (emailError) {
+        console.error('[Webhook] Erreur lors de l\'envoi de l\'email:', emailError);
+        // Ne pas bloquer le webhook si l'email échoue
       }
     }
 
