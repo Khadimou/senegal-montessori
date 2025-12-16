@@ -113,11 +113,16 @@ export async function POST(request: NextRequest) {
     if (orderError || !order) {
       console.error('Erreur création commande:', orderError);
       console.error('Données envoyées:', JSON.stringify(orderData, null, 2));
+      console.error('Code erreur:', orderError?.code);
+      console.error('Détails erreur:', orderError?.details);
+      console.error('Hint:', orderError?.hint);
+      
       return NextResponse.json(
         { 
           error: 'Erreur lors de la création de la commande', 
           details: orderError?.message || 'La commande n\'a pas été créée',
-          hint: 'Vérifiez que la table orders existe dans Supabase et exécutez supabase-full-schema.sql'
+          code: orderError?.code,
+          hint: orderError?.hint || 'Vérifiez que la table orders contient toutes les colonnes nécessaires. Exécutez supabase-orders-update-schema.sql'
         },
         { status: 500 }
       );
