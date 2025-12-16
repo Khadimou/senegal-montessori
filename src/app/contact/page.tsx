@@ -100,7 +100,7 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-stone-800">Téléphone</h3>
-                    <a href="tel:+221771234567" className="text-stone-600 hover:text-amber-600 transition-colors">
+                    <a href="tel:+221711150763" className="text-stone-600 hover:text-amber-600 transition-colors">
                       +221 77 123 45 67
                     </a>
                   </div>
@@ -143,7 +143,7 @@ export default function ContactPage() {
                 Pour une réponse rapide, contactez-nous directement sur WhatsApp
               </p>
               <a
-                href="https://wa.me/221771234567"
+                href="https://wa.me/221711150763"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-2 px-4 py-2 bg-emerald-500 text-white rounded-xl font-medium hover:bg-emerald-600 transition-colors"

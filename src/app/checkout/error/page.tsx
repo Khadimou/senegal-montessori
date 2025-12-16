@@ -101,7 +101,7 @@ function ErrorContent() {
         >
           <p className="text-sm text-stone-500 mb-3">Besoin d&apos;aide ?</p>
           <a
-            href="https://wa.me/221771234567"
+            href="https://wa.me/221711150763"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-2 text-emerald-600 hover:text-emerald-700 font-medium"
