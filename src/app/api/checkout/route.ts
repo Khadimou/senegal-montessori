@@ -91,24 +91,47 @@ export async function POST(request: NextRequest) {
         quantity: item.quantity,
         price: item.price,
       })),
-      subtotal,
-      discount_amount: discount,
       total,
       status: 'pending',
       payment_method: paymentMethod,
     };
 
-    // Ajouter les infos du code promo si présent
-    if (promoCode) {
-      orderData.promo_code_id = promoCode.id;
-      orderData.promo_code = promoCode.code;
-    }
+    // Tester d'abord avec tous les champs
+    let order;
+    let orderError;
+    
+    // Essayer avec les nouveaux champs (subtotal, discount, promo)
+    const fullOrderData = {
+      ...orderData,
+      subtotal,
+      discount_amount: discount,
+      ...(promoCode && {
+        promo_code_id: promoCode.id,
+        promo_code: promoCode.code,
+      }),
+    };
 
-    const { data: order, error: orderError } = await supabase
+    const result = await supabase
       .from('orders')
-      .insert([orderData])
+      .insert([fullOrderData])
       .select()
       .single();
+
+    order = result.data;
+    orderError = result.error;
+
+    // Si erreur de colonne manquante, réessayer sans ces champs
+    if (orderError && (orderError.code === '42703' || orderError.message?.includes('column'))) {
+      console.log('[Checkout] Colonnes promo non disponibles, création sans ces champs');
+      const fallbackResult = await supabase
+        .from('orders')
+        .insert([orderData])
+        .select()
+        .single();
+      
+      order = fallbackResult.data;
+      orderError = fallbackResult.error;
+    }
 
     if (orderError || !order) {
       console.error('Erreur création commande:', orderError);
