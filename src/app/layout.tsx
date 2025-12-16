@@ -4,6 +4,7 @@ import "./globals.css";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import ProductsProvider from "@/components/ProductsProvider";
+import GoogleAnalytics from "@/components/GoogleAnalytics";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -39,6 +40,7 @@ export default function RootLayout({
   return (
     <html lang="fr" className={`${dmSans.variable} ${playfair.variable}`}>
       <body className="font-sans antialiased bg-stone-50 text-stone-900">
+        <GoogleAnalytics />
         <ProductsProvider>
           <Header />
           <main className="min-h-screen pt-20">

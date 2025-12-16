@@ -6,6 +6,7 @@ import { Search, SlidersHorizontal, X, Loader2 } from 'lucide-react';
 import ProductCard from '@/components/ProductCard';
 import { useProductsStore } from '@/store/products';
 import { categories } from '@/data/products';
+import * as analytics from '@/lib/analytics';
 
 export default function ProductsPage() {
   const { products, isLoading, fetchProducts } = useProductsStore();
@@ -26,6 +27,13 @@ export default function ProductsPage() {
       return matchesSearch && matchesCategory;
     });
   }, [products, searchQuery, selectedCategory]);
+
+  // Track search
+  useEffect(() => {
+    if (searchQuery.length >= 3) {
+      analytics.search(searchQuery, filteredProducts.length);
+    }
+  }, [searchQuery, filteredProducts.length]);
 
   return (
     <div className="min-h-screen bg-stone-50">

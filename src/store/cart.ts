@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { CartItem, Product } from '@/types';
+import * as analytics from '@/lib/analytics';
 
 interface CartState {
   items: CartItem[];
@@ -23,6 +24,15 @@ export const useCartStore = create<CartState>()(
       isOpen: false,
 
       addItem: (product: Product) => {
+        // Analytics: track add to cart
+        analytics.addToCart({
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          category: product.category,
+          quantity: 1,
+        });
+
         set((state) => {
           const existingItem = state.items.find(item => item.id === product.id);
           const maxStock = product.stockQuantity || 99; // Limite par défaut si pas de stock défini
@@ -46,6 +56,19 @@ export const useCartStore = create<CartState>()(
       },
 
       removeItem: (productId: string) => {
+        const state = get();
+        const item = state.items.find(i => i.id === productId);
+        
+        if (item) {
+          // Analytics: track remove from cart
+          analytics.removeFromCart({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+          });
+        }
+
         set((state) => ({
           items: state.items.filter(item => item.id !== productId)
         }));

@@ -6,11 +6,14 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { CheckCircle, Package, ArrowRight, Home } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { supabase } from '@/lib/supabase';
+import * as analytics from '@/lib/analytics';
 
 function SuccessContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('order_id');
   const [showConfetti, setShowConfetti] = useState(false);
+  const [tracked, setTracked] = useState(false);
 
   useEffect(() => {
     // Lancer les confettis au chargement
@@ -24,6 +27,50 @@ function SuccessContent() {
       });
     }
   }, [showConfetti]);
+
+  // Track purchase
+  useEffect(() => {
+    if (orderId && !tracked) {
+      setTracked(true);
+      
+      // Récupérer les détails de la commande pour analytics
+      const trackPurchase = async () => {
+        try {
+          const { data: order } = await supabase
+            .from('orders')
+            .select('*')
+            .eq('id', orderId)
+            .single();
+
+          if (order) {
+            analytics.purchase({
+              transaction_id: order.id,
+              value: order.total || 0,
+              items: (order.items as Array<{
+                product_id: string;
+                product_name: string;
+                quantity: number;
+                price: number;
+              }>).map(item => ({
+                id: item.product_id,
+                name: item.product_name,
+                price: item.price,
+                category: 'montessori',
+                quantity: item.quantity,
+              })),
+              shipping: order.total - order.subtotal || 0,
+              discount: order.discount_amount || 0,
+              promo_code: order.promo_code || undefined,
+            });
+          }
+        } catch (error) {
+          console.error('Error tracking purchase:', error);
+        }
+      };
+
+      trackPurchase();
+    }
+  }, [orderId, tracked]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-emerald-50 to-amber-50 flex items-center justify-center p-4">

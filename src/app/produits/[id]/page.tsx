@@ -10,6 +10,7 @@ import { useCartStore } from '@/store/cart';
 import { useProductsStore } from '@/store/products';
 import ProductCard from '@/components/ProductCard';
 import ImageGallery from '@/components/ImageGallery';
+import * as analytics from '@/lib/analytics';
 
 interface ProductPageProps {
   params: Promise<{ id: string }>;
@@ -39,6 +40,18 @@ export default function ProductPage({ params }: ProductPageProps) {
       fetchProducts();
     }
   }, [lastFetch, fetchProducts]);
+
+  // Track product view
+  useEffect(() => {
+    if (product) {
+      analytics.viewProduct({
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        category: product.category,
+      });
+    }
+  }, [product]);
 
   // Afficher le chargement si les produits ne sont pas encore chargés
   if (!mounted || (isLoading && products.length === 0) || (!lastFetch && products.length === 0)) {
@@ -105,6 +118,13 @@ export default function ProductPage({ params }: ProductPageProps) {
       });
 
       if (!response.ok) throw new Error('Erreur lors de la demande');
+
+      // Analytics: track preorder request
+      analytics.preorderRequest({
+        id: product.id,
+        name: product.name,
+        quantity: quantity,
+      });
 
       setPreorderSuccess(true);
       setPreorderData({ name: '', email: '', phone: '' });

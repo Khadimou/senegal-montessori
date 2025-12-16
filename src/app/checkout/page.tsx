@@ -25,6 +25,7 @@ import { usePromoStore } from '@/store/promo';
 import { formatPrice } from '@/data/products';
 import { PaymentMethod } from '@/lib/naboopay';
 import { PromoCodeValidation } from '@/types';
+import * as analytics from '@/lib/analytics';
 
 const paymentMethods: { id: PaymentMethod; name: string; icon: string; color: string }[] = [
   { id: 'WAVE', name: 'Wave', icon: '🌊', color: 'bg-blue-500' },
@@ -72,6 +73,11 @@ export default function CheckoutPage() {
     if (validation.is_valid) {
       setAppliedPromo(validation);
       setPromoError(null);
+      
+      // Analytics: track promo code usage
+      if (validation.calculated_discount) {
+        analytics.addPromoCode(promoCode, validation.calculated_discount);
+      }
     } else {
       setPromoError(validation.error_message || 'Code invalide');
       setAppliedPromo(null);
@@ -127,6 +133,18 @@ export default function CheckoutPage() {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+
+    // Analytics: track begin checkout
+    analytics.beginCheckout(
+      items.map(item => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        category: item.category,
+        quantity: item.quantity,
+      })),
+      total
+    );
 
     try {
       const response = await fetch('/api/checkout', {
