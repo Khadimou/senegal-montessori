@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { MapPin, Phone, Mail, Clock, Send, MessageCircle } from 'lucide-react';
+import * as metaPixel from '@/lib/meta-pixel';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -35,6 +36,9 @@ export default function ContactPage() {
       if (!response.ok) {
         throw new Error(data.error || 'Erreur lors de l\'envoi');
       }
+
+      // Track contact form submission
+      metaPixel.contact();
 
       setIsSubmitted(true);
       setFormData({ name: '', email: '', phone: '', subject: '', message: '' });

@@ -26,6 +26,7 @@ import { formatPrice } from '@/data/products';
 import { PaymentMethod } from '@/lib/naboopay';
 import { PromoCodeValidation } from '@/types';
 import * as analytics from '@/lib/analytics';
+import * as metaPixel from '@/lib/meta-pixel';
 
 const paymentMethods: { id: PaymentMethod; name: string; icon: string; color: string }[] = [
   { id: 'WAVE', name: 'Wave', icon: '🌊', color: 'bg-blue-500' },
@@ -134,7 +135,7 @@ export default function CheckoutPage() {
     setIsLoading(true);
     setError(null);
 
-    // Analytics: track begin checkout
+    // Analytics: track begin checkout (Google Analytics + Meta Pixel)
     analytics.beginCheckout(
       items.map(item => ({
         id: item.id,
@@ -145,6 +146,20 @@ export default function CheckoutPage() {
       })),
       total
     );
+    metaPixel.initiateCheckout({
+      items: items.map(item => ({
+        id: item.id,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+      })),
+      total,
+      numItems: items.reduce((sum, item) => sum + item.quantity, 0),
+    });
+    metaPixel.addPaymentInfo({
+      total,
+      paymentMethod: selectedPayment,
+    });
 
     try {
       const response = await fetch('/api/checkout', {

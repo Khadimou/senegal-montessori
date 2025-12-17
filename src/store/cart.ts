@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { CartItem, Product } from '@/types';
 import * as analytics from '@/lib/analytics';
+import * as metaPixel from '@/lib/meta-pixel';
 
 interface CartState {
   items: CartItem[];
@@ -24,8 +25,15 @@ export const useCartStore = create<CartState>()(
       isOpen: false,
 
       addItem: (product: Product) => {
-        // Analytics: track add to cart
+        // Analytics: track add to cart (Google Analytics + Meta Pixel)
         analytics.addToCart({
+          id: product.id,
+          name: product.name,
+          price: product.price,
+          category: product.category,
+          quantity: 1,
+        });
+        metaPixel.addToCart({
           id: product.id,
           name: product.name,
           price: product.price,

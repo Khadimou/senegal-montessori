@@ -122,3 +122,4 @@ Télécharge l'app **Google Analytics** (iOS/Android) pour suivre tes stats en t
 - [Guide E-commerce GA4](https://support.google.com/analytics/answer/9268036)
 - [Academy GA4](https://skillshop.exceedlms.com/student/catalog/list?category_ids=6431-google-analytics-4)
 
+

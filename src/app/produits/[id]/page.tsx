@@ -1,453 +1,248 @@
-'use client';
-
-import { use, useState, useEffect } from 'react';
+import { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
-import { motion } from 'framer-motion';
-import { ArrowLeft, ShoppingBag, Truck, ShieldCheck, RotateCcw, Check, Minus, Plus, Clock, Mail, Phone, User, X, CheckCircle } from 'lucide-react';
+import { createClient } from '@supabase/supabase-js';
+import { Product } from '@/types';
+import { DbProduct } from '@/lib/supabase';
+import { products as staticProducts } from '@/data/products';
 import { formatPrice } from '@/data/products';
-import { useCartStore } from '@/store/cart';
-import { useProductsStore } from '@/store/products';
-import ProductCard from '@/components/ProductCard';
-import ImageGallery from '@/components/ImageGallery';
-import * as analytics from '@/lib/analytics';
+import ProductDetails from '@/components/ProductDetails';
 
-interface ProductPageProps {
-  params: Promise<{ id: string }>;
+// Créer un client Supabase pour le SSR
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Convertir du format DB vers le format App
+const dbToProduct = (db: DbProduct): Product => {
+  const stockQuantity = db.stock_quantity || 0;
+  const hasStockManagement = db.stock_quantity !== null && db.stock_quantity !== undefined;
+  const inStock = hasStockManagement ? stockQuantity > 0 : db.in_stock;
+
+  return {
+    id: db.id,
+    name: db.name,
+    description: db.description,
+    price: db.price,
+    images: db.images || [],
+    image: db.images?.[0] || '',
+    category: db.category,
+    ageRange: db.age_range,
+    inStock,
+    features: db.features || [],
+    costPrice: db.cost_price || 0,
+    stockQuantity,
+    minStockAlert: db.min_stock_alert || 5,
+    supplier: db.supplier,
+    totalSold: db.total_sold || 0,
+  };
+};
+
+// Fonction pour récupérer un produit
+async function getProduct(id: string): Promise<Product | null> {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !data) {
+      // Fallback vers les produits statiques
+      const staticProduct = staticProducts.find(p => p.id === id);
+      if (staticProduct) {
+        return {
+          ...staticProduct,
+          images: staticProduct.image ? [staticProduct.image] : [],
+        };
+      }
+      return null;
+    }
+
+    return dbToProduct(data);
+  } catch {
+    // Fallback vers les produits statiques
+    const staticProduct = staticProducts.find(p => p.id === id);
+    if (staticProduct) {
+      return {
+        ...staticProduct,
+        images: staticProduct.image ? [staticProduct.image] : [],
+      };
+    }
+    return null;
+  }
 }
 
-export default function ProductPage({ params }: ProductPageProps) {
-  const { id } = use(params);
-  const { products, isLoading, fetchProducts, lastFetch } = useProductsStore();
-  const [quantity, setQuantity] = useState(1);
-  const { addItem, openCart } = useCartStore();
-  const [mounted, setMounted] = useState(false);
-  
-  // États pour la demande de précommande
-  const [showPreorderForm, setShowPreorderForm] = useState(false);
-  const [preorderSubmitting, setPreorderSubmitting] = useState(false);
-  const [preorderSuccess, setPreorderSuccess] = useState(false);
-  const [preorderData, setPreorderData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-  });
+// Fonction pour récupérer tous les produits (pour les produits similaires)
+async function getAllProducts(): Promise<Product[]> {
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false });
 
-  useEffect(() => {
-    setMounted(true);
-    // S'assurer que les produits sont chargés
-    if (!lastFetch) {
-      fetchProducts();
+    if (error || !data || data.length === 0) {
+      return staticProducts.map(p => ({
+        ...p,
+        images: p.image ? [p.image] : [],
+      }));
     }
-  }, [lastFetch, fetchProducts]);
 
-  const product = products.find(p => p.id === id);
+    return data.map(dbToProduct);
+  } catch {
+    return staticProducts.map(p => ({
+      ...p,
+      images: p.image ? [p.image] : [],
+    }));
+  }
+}
 
-  // Track product view
-  useEffect(() => {
-    if (product) {
-      analytics.viewProduct({
-        id: product.id,
-        name: product.name,
-        price: product.price,
-        category: product.category,
-      });
-    }
-  }, [product]);
+// Génération des métadonnées dynamiques pour SEO
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  const { id } = await params;
+  const product = await getProduct(id);
 
-  // Afficher le chargement si les produits ne sont pas encore chargés
-  if (!mounted || (isLoading && products.length === 0) || (!lastFetch && products.length === 0)) {
-    return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-stone-500">Chargement du produit...</p>
-        </div>
-      </div>
-    );
+  if (!product) {
+    return {
+      title: 'Produit non trouvé | Montessori Sénégal',
+      description: 'Ce produit n\'existe pas ou n\'est plus disponible.',
+    };
   }
 
-  // Seulement afficher 404 si les produits sont chargés mais le produit n'existe pas
-  if (!product && lastFetch) {
+  const title = `${product.name} - Jouet Montessori ${product.ageRange} | Montessori Sénégal`;
+  const description = `${product.description.slice(0, 150)}... Prix: ${formatPrice(product.price)}. Livraison Dakar. Paiement Wave/Orange Money.`;
+  const imageUrl = product.images[0] || product.image || '';
+
+  return {
+    title,
+    description,
+    keywords: [
+      product.name,
+      'Montessori',
+      'jouet éducatif',
+      product.category,
+      'Sénégal',
+      'Dakar',
+      product.ageRange,
+      'cadeau enfant',
+    ],
+    openGraph: {
+      title: product.name,
+      description: product.description,
+      type: 'website',
+      locale: 'fr_SN',
+      siteName: 'Montessori Sénégal',
+      images: imageUrl ? [
+        {
+          url: imageUrl,
+          width: 800,
+          height: 800,
+          alt: product.name,
+        }
+      ] : [],
+    },
+    twitter: {
+      card: 'summary_large_image',
+      title: product.name,
+      description: product.description,
+      images: imageUrl ? [imageUrl] : [],
+    },
+  };
+}
+
+// Composant JSON-LD pour les données structurées
+function ProductJsonLd({ product }: { product: Product }) {
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Product',
+    name: product.name,
+    description: product.description,
+    image: product.images.length > 0 ? product.images : (product.image ? [product.image] : []),
+    sku: product.id,
+    brand: {
+      '@type': 'Brand',
+      name: 'Montessori Sénégal',
+    },
+    offers: {
+      '@type': 'Offer',
+      url: `https://senegal-montessori.store/produits/${product.id}`,
+      priceCurrency: 'XOF',
+      price: product.price,
+      availability: product.inStock 
+        ? 'https://schema.org/InStock' 
+        : 'https://schema.org/OutOfStock',
+      seller: {
+        '@type': 'Organization',
+        name: 'Montessori Sénégal',
+      },
+      shippingDetails: {
+        '@type': 'OfferShippingDetails',
+        shippingDestination: {
+          '@type': 'DefinedRegion',
+          addressCountry: 'SN',
+        },
+        deliveryTime: {
+          '@type': 'ShippingDeliveryTime',
+          handlingTime: {
+            '@type': 'QuantitativeValue',
+            minValue: 1,
+            maxValue: 2,
+            unitCode: 'DAY',
+          },
+          transitTime: {
+            '@type': 'QuantitativeValue',
+            minValue: 1,
+            maxValue: 3,
+            unitCode: 'DAY',
+          },
+        },
+      },
+    },
+    category: product.category,
+    audience: {
+      '@type': 'PeopleAudience',
+      suggestedMinAge: product.ageRange.split('-')[0]?.trim() || '0',
+      suggestedMaxAge: product.ageRange.split('-')[1]?.replace(/[^0-9]/g, '') || '12',
+    },
+    additionalProperty: product.features.map(feature => ({
+      '@type': 'PropertyValue',
+      name: 'Caractéristique',
+      value: feature,
+    })),
+  };
+
+  return (
+    <script
+      type="application/ld+json"
+      dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+    />
+  );
+}
+
+// Page principale (Server Component)
+export default async function ProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  
+  const [product, allProducts] = await Promise.all([
+    getProduct(id),
+    getAllProducts(),
+  ]);
+
+  if (!product) {
     notFound();
   }
 
-  // Sécurité supplémentaire pendant le chargement
-  if (!product) {
-    return (
-      <div className="min-h-screen bg-stone-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-          <p className="text-stone-500">Chargement du produit...</p>
-        </div>
-      </div>
-    );
-  }
-
-  const relatedProducts = products
+  // Produits similaires (même catégorie, différent ID)
+  const relatedProducts = allProducts
     .filter(p => p.category === product.category && p.id !== product.id)
     .slice(0, 4);
 
-  const handleAddToCart = () => {
-    if (!product.inStock) {
-      setShowPreorderForm(true);
-      return;
-    }
-    for (let i = 0; i < quantity; i++) {
-      addItem(product);
-    }
-    openCart();
-  };
-
-  const handlePreorderSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPreorderSubmitting(true);
-
-    try {
-      const response = await fetch('/api/preorder-request', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          product_id: product.id,
-          product_name: product.name,
-          customer_name: preorderData.name,
-          customer_email: preorderData.email,
-          customer_phone: preorderData.phone,
-          quantity_requested: quantity,
-        }),
-      });
-
-      if (!response.ok) throw new Error('Erreur lors de la demande');
-
-      // Analytics: track preorder request
-      analytics.preorderRequest({
-        id: product.id,
-        name: product.name,
-        quantity: quantity,
-      });
-
-      setPreorderSuccess(true);
-      setPreorderData({ name: '', email: '', phone: '' });
-      setQuantity(1);
-    } catch (error) {
-      console.error('Erreur:', error);
-      alert('Une erreur est survenue. Veuillez réessayer.');
-    } finally {
-      setPreorderSubmitting(false);
-    }
-  };
-
-  // Utiliser images si disponible, sinon fallback sur image
-  const productImages = product.images?.length > 0 
-    ? product.images 
-    : product.image 
-      ? [product.image] 
-      : [];
-
   return (
-    <div className="min-h-screen bg-stone-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Breadcrumb */}
-        <nav className="mb-8">
-          <Link
-            href="/produits"
-            className="inline-flex items-center gap-2 text-stone-600 hover:text-amber-600 transition-colors"
-          >
-            <ArrowLeft className="w-5 h-5" />
-            Retour à la boutique
-          </Link>
-        </nav>
-
-        {/* Product Details */}
-        <div className="grid lg:grid-cols-2 gap-12 mb-24">
-          {/* Image Gallery */}
-          <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="relative"
-          >
-            <ImageGallery images={productImages} alt={product.name} />
-            {!product.inStock && (
-              <div className="absolute top-4 left-4 px-4 py-2 bg-stone-800 text-white font-medium rounded-xl">
-                Rupture de stock
-              </div>
-            )}
-          </motion.div>
-
-          {/* Info */}
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            className="flex flex-col"
-          >
-            <span className="text-amber-600 font-medium uppercase tracking-wider">
-              {product.category.replace('-', ' ')}
-            </span>
-
-            <h1 className="mt-2 text-3xl md:text-4xl font-bold text-stone-800">
-              {product.name}
-            </h1>
-
-            <div className="mt-4 flex items-center gap-4">
-              <span className="text-3xl font-bold text-amber-600">
-                {formatPrice(product.price)}
-              </span>
-              <span className="px-3 py-1 bg-amber-100 text-amber-700 text-sm font-medium rounded-full">
-                {product.ageRange}
-              </span>
-            </div>
-
-            <p className="mt-6 text-lg text-stone-600 leading-relaxed">
-              {product.description}
-            </p>
-
-            {/* Features */}
-            <div className="mt-8">
-              <h3 className="font-semibold text-stone-800 mb-4">Caractéristiques</h3>
-              <ul className="grid grid-cols-2 gap-3">
-                {product.features.map((feature, index) => (
-                  <li key={index} className="flex items-center gap-2 text-stone-600">
-                    <Check className="w-5 h-5 text-emerald-500 flex-shrink-0" />
-                    {feature}
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-            {/* Info liste d'attente si rupture */}
-            {!product.inStock && !showPreorderForm && !preorderSuccess && (
-              <div className="mt-6 p-4 bg-amber-50 border border-amber-200 rounded-xl">
-                <div className="flex items-start gap-3">
-                  <Clock className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-semibold text-amber-800">Produit en rupture de stock</p>
-                    <p className="text-sm text-amber-700 mt-1">
-                      Ce produit est actuellement indisponible. Manifestez votre intérêt et nous vous contacterons dès qu&apos;il sera de nouveau disponible.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Formulaire de demande */}
-            {!product.inStock && showPreorderForm && !preorderSuccess && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                className="mt-6 p-6 bg-white border-2 border-amber-200 rounded-2xl"
-              >
-                <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-semibold text-stone-800">Manifester mon intérêt</h3>
-                  <button
-                    onClick={() => setShowPreorderForm(false)}
-                    className="p-1 hover:bg-stone-100 rounded-lg transition-colors"
-                  >
-                    <X className="w-5 h-5 text-stone-500" />
-                  </button>
-                </div>
-                
-                <form onSubmit={handlePreorderSubmit} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700 mb-2">
-                      Nom complet *
-                    </label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
-                      <input
-                        type="text"
-                        required
-                        value={preorderData.name}
-                        onChange={(e) => setPreorderData({ ...preorderData, name: e.target.value })}
-                        className="w-full pl-10 pr-4 py-2 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500"
-                        placeholder="Votre nom"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700 mb-2">
-                      Email *
-                    </label>
-                    <div className="relative">
-                      <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
-                      <input
-                        type="email"
-                        required
-                        value={preorderData.email}
-                        onChange={(e) => setPreorderData({ ...preorderData, email: e.target.value })}
-                        className="w-full pl-10 pr-4 py-2 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500"
-                        placeholder="votre@email.com"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700 mb-2">
-                      Téléphone
-                    </label>
-                    <div className="relative">
-                      <Phone className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-stone-400" />
-                      <input
-                        type="tel"
-                        value={preorderData.phone}
-                        onChange={(e) => setPreorderData({ ...preorderData, phone: e.target.value })}
-                        className="w-full pl-10 pr-4 py-2 border border-stone-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500"
-                        placeholder="+221 77 XXX XX XX"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-stone-700 mb-2">
-                      Quantité souhaitée: {quantity}
-                    </label>
-                    <div className="flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                        className="w-10 h-10 rounded-lg bg-stone-100 flex items-center justify-center hover:bg-stone-200 transition-colors"
-                      >
-                        <Minus className="w-5 h-5 text-stone-600" />
-                      </button>
-                      <span className="flex-1 text-center font-semibold text-xl">{quantity}</span>
-                      <button
-                        type="button"
-                        onClick={() => setQuantity(quantity + 1)}
-                        className="w-10 h-10 rounded-lg bg-stone-100 flex items-center justify-center hover:bg-stone-200 transition-colors"
-                      >
-                        <Plus className="w-5 h-5 text-stone-600" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={preorderSubmitting}
-                    className="w-full py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold hover:from-amber-600 hover:to-orange-600 transition-all disabled:opacity-50"
-                  >
-                    {preorderSubmitting ? 'Envoi en cours...' : 'Envoyer ma demande'}
-                  </button>
-                </form>
-              </motion.div>
-            )}
-
-            {/* Message de succès */}
-            {!product.inStock && preorderSuccess && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="mt-6 p-6 bg-emerald-50 border-2 border-emerald-200 rounded-2xl text-center"
-              >
-                <CheckCircle className="w-12 h-12 text-emerald-600 mx-auto mb-3" />
-                <h3 className="font-semibold text-emerald-800 mb-2">Demande enregistrée !</h3>
-                <p className="text-sm text-emerald-700">
-                  Nous vous contacterons dès que ce produit sera disponible.
-                </p>
-                <button
-                  onClick={() => setPreorderSuccess(false)}
-                  className="mt-4 text-sm text-emerald-700 hover:text-emerald-800 underline"
-                >
-                  Faire une autre demande
-                </button>
-              </motion.div>
-            )}
-
-            {/* Stock disponible */}
-            {product.inStock && product.stockQuantity !== undefined && product.stockQuantity > 0 && (
-              <div className="mt-6">
-                <span className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium ${
-                  product.stockQuantity <= 3 
-                    ? 'bg-orange-100 text-orange-700' 
-                    : 'bg-emerald-100 text-emerald-700'
-                }`}>
-                  {product.stockQuantity <= 3 
-                    ? `⚠️ Plus que ${product.stockQuantity} en stock` 
-                    : `✓ ${product.stockQuantity} en stock`
-                  }
-                </span>
-              </div>
-            )}
-
-            {/* Quantity & Add to Cart - Visible seulement si pas de formulaire affiché */}
-            {(!showPreorderForm || product.inStock) && !preorderSuccess && (
-              <div className="mt-8 flex flex-col sm:flex-row gap-4">
-                {product.inStock && (
-                  <div className="flex items-center gap-3 bg-white rounded-xl border border-stone-200 px-4 py-2">
-                    <button
-                      onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                      className="w-10 h-10 rounded-lg bg-stone-100 flex items-center justify-center hover:bg-stone-200 transition-colors"
-                      aria-label="Diminuer"
-                    >
-                      <Minus className="w-5 h-5 text-stone-600" />
-                    </button>
-                    <span className="w-12 text-center font-semibold text-stone-800 text-lg">
-                      {quantity}
-                    </span>
-                    <button
-                      onClick={() => setQuantity(quantity + 1)}
-                      className="w-10 h-10 rounded-lg bg-stone-100 flex items-center justify-center hover:bg-stone-200 transition-colors"
-                      aria-label="Augmenter"
-                    >
-                      <Plus className="w-5 h-5 text-stone-600" />
-                    </button>
-                  </div>
-                )}
-
-                <button
-                  onClick={handleAddToCart}
-                  className={`flex-1 flex items-center justify-center gap-3 px-8 py-4 rounded-xl font-semibold transition-all shadow-lg ${
-                    product.inStock 
-                      ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white hover:from-amber-600 hover:to-orange-600 shadow-amber-500/25' 
-                      : 'bg-gradient-to-r from-purple-500 to-indigo-500 text-white hover:from-purple-600 hover:to-indigo-600 shadow-purple-500/25'
-                  }`}
-                >
-                  {product.inStock ? (
-                    <>
-                      <ShoppingBag className="w-5 h-5" />
-                      Ajouter au panier
-                    </>
-                  ) : (
-                    <>
-                      <Clock className="w-5 h-5" />
-                      Manifester mon intérêt
-                    </>
-                  )}
-                </button>
-              </div>
-            )}
-
-            {/* Trust Badges */}
-            <div className="mt-8 grid grid-cols-3 gap-4">
-              <div className="flex flex-col items-center text-center p-4 bg-white rounded-xl border border-stone-100">
-                <Truck className="w-6 h-6 text-amber-600 mb-2" />
-                <span className="text-xs text-stone-600">Livraison Dakar</span>
-              </div>
-              <div className="flex flex-col items-center text-center p-4 bg-white rounded-xl border border-stone-100">
-                <ShieldCheck className="w-6 h-6 text-amber-600 mb-2" />
-                <span className="text-xs text-stone-600">Qualité garantie</span>
-              </div>
-              <div className="flex flex-col items-center text-center p-4 bg-white rounded-xl border border-stone-100">
-                <RotateCcw className="w-6 h-6 text-amber-600 mb-2" />
-                <span className="text-xs text-stone-600">Retour 14 jours</span>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-
-        {/* Related Products */}
-        {relatedProducts.length > 0 && (
-          <section>
-            <h2 className="text-2xl md:text-3xl font-bold text-stone-800 mb-8">
-              Produits similaires
-            </h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {relatedProducts.map((product, index) => (
-                <ProductCard key={product.id} product={product} index={index} />
-              ))}
-            </div>
-          </section>
-        )}
-      </div>
-    </div>
+    <>
+      {/* JSON-LD pour les données structurées Google */}
+      <ProductJsonLd product={product} />
+      
+      {/* Composant client pour les interactions */}
+      <ProductDetails product={product} relatedProducts={relatedProducts} />
+    </>
   );
 }

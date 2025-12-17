@@ -8,6 +8,7 @@ import { CheckCircle, Package, ArrowRight, Home } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { supabase } from '@/lib/supabase';
 import * as analytics from '@/lib/analytics';
+import * as metaPixel from '@/lib/meta-pixel';
 
 function SuccessContent() {
   const searchParams = useSearchParams();
@@ -43,24 +44,34 @@ function SuccessContent() {
             .single();
 
           if (order) {
+            const orderItems = (order.items as Array<{
+              product_id: string;
+              product_name: string;
+              quantity: number;
+              price: number;
+            }>).map(item => ({
+              id: item.product_id,
+              name: item.product_name,
+              price: item.price,
+              category: 'montessori',
+              quantity: item.quantity,
+            }));
+
+            // Google Analytics
             analytics.purchase({
               transaction_id: order.id,
               value: order.total || 0,
-              items: (order.items as Array<{
-                product_id: string;
-                product_name: string;
-                quantity: number;
-                price: number;
-              }>).map(item => ({
-                id: item.product_id,
-                name: item.product_name,
-                price: item.price,
-                category: 'montessori',
-                quantity: item.quantity,
-              })),
+              items: orderItems,
               shipping: order.total - order.subtotal || 0,
               discount: order.discount_amount || 0,
               promo_code: order.promo_code || undefined,
+            });
+
+            // Meta Pixel
+            metaPixel.purchase({
+              transactionId: order.id,
+              total: order.total || 0,
+              items: orderItems,
             });
           }
         } catch (error) {

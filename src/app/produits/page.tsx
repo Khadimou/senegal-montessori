@@ -7,6 +7,7 @@ import ProductCard from '@/components/ProductCard';
 import { useProductsStore } from '@/store/products';
 import { categories } from '@/data/products';
 import * as analytics from '@/lib/analytics';
+import * as metaPixel from '@/lib/meta-pixel';
 
 export default function ProductsPage() {
   const { products, isLoading, fetchProducts } = useProductsStore();
@@ -28,10 +29,11 @@ export default function ProductsPage() {
     });
   }, [products, searchQuery, selectedCategory]);
 
-  // Track search
+  // Track search (Google Analytics + Meta Pixel)
   useEffect(() => {
     if (searchQuery.length >= 3) {
       analytics.search(searchQuery, filteredProducts.length);
+      metaPixel.search(searchQuery);
     }
   }, [searchQuery, filteredProducts.length]);
 

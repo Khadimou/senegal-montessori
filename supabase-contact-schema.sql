@@ -67,3 +67,4 @@ CREATE POLICY "Allow service role to update contact messages"
 -- Exécutez cette requête pour vérifier la création :
 -- SELECT * FROM contact_messages LIMIT 1;
 
+
