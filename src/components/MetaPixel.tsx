@@ -34,7 +34,7 @@ export default function MetaPixel() {
       <Suspense fallback={null}>
         <MetaPixelTracker />
       </Suspense>
-      {/* Meta Pixel Script */}
+      {/* Meta Pixel Code - Code fourni par Meta Business Suite */}
       <Script
         id="meta-pixel-init"
         strategy="afterInteractive"
