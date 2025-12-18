@@ -23,16 +23,16 @@ import {
 import { useCartStore } from '@/store/cart';
 import { usePromoStore } from '@/store/promo';
 import { formatPrice } from '@/data/products';
-import { PaymentMethod } from '@/lib/naboopay';
+import { ExtendedPaymentMethod } from '@/lib/naboopay';
 import { PromoCodeValidation } from '@/types';
 import * as analytics from '@/lib/analytics';
 import * as metaPixel from '@/lib/meta-pixel';
 
-const paymentMethods: { id: PaymentMethod; name: string; icon: string; color: string }[] = [
+const paymentMethods: { id: ExtendedPaymentMethod; name: string; icon: string; color: string; description?: string }[] = [
+  { id: 'COD', name: 'À la livraison', icon: '💵', color: 'bg-emerald-500', description: 'Payez en espèces à la réception' },
   { id: 'WAVE', name: 'Wave', icon: '🌊', color: 'bg-blue-500' },
   { id: 'ORANGE_MONEY', name: 'Orange Money', icon: '🟠', color: 'bg-orange-500' },
   { id: 'FREE_MONEY', name: 'Free Money', icon: '💜', color: 'bg-purple-500' },
-  { id: 'BANK', name: 'Virement Bancaire', icon: '🏦', color: 'bg-stone-600' },
 ];
 
 export default function CheckoutPage() {
@@ -42,7 +42,7 @@ export default function CheckoutPage() {
   const [mounted, setMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedPayment, setSelectedPayment] = useState<PaymentMethod>('WAVE');
+  const [selectedPayment, setSelectedPayment] = useState<ExtendedPaymentMethod>('COD');
   
   // États pour le code promo
   const [promoCode, setPromoCode] = useState('');
@@ -194,10 +194,15 @@ export default function CheckoutPage() {
         throw new Error(data.error || 'Erreur lors du checkout');
       }
 
-      // Rediriger vers la page de paiement NabooPay
-      if (data.checkout_url) {
-        // Vider le panier avant redirection
-        clearCart();
+      // Vider le panier
+      clearCart();
+      
+      // Rediriger selon le type de paiement
+      if (data.is_cod) {
+        // Paiement à la livraison - rediriger vers page succès
+        router.push(`/checkout/success?order_id=${data.order_id}&cod=true`);
+      } else if (data.checkout_url) {
+        // Paiement en ligne - rediriger vers NabooPay
         window.location.href = data.checkout_url;
       } else {
         throw new Error('URL de paiement non reçue');
@@ -330,20 +335,34 @@ export default function CheckoutPage() {
                       onClick={() => setSelectedPayment(method.id)}
                       className={`relative p-4 rounded-xl border-2 transition-all ${
                         selectedPayment === method.id
-                          ? 'border-amber-500 bg-amber-50'
+                          ? method.id === 'COD' ? 'border-emerald-500 bg-emerald-50' : 'border-amber-500 bg-amber-50'
                           : 'border-stone-200 hover:border-stone-300'
                       }`}
                     >
                       {selectedPayment === method.id && (
-                        <div className="absolute top-2 right-2 w-5 h-5 bg-amber-500 rounded-full flex items-center justify-center">
+                        <div className={`absolute top-2 right-2 w-5 h-5 rounded-full flex items-center justify-center ${
+                          method.id === 'COD' ? 'bg-emerald-500' : 'bg-amber-500'
+                        }`}>
                           <Check className="w-3 h-3 text-white" />
                         </div>
                       )}
                       <div className="text-2xl mb-2">{method.icon}</div>
                       <div className="text-sm font-medium text-stone-700">{method.name}</div>
+                      {method.description && (
+                        <div className="text-xs text-stone-500 mt-1">{method.description}</div>
+                      )}
                     </button>
                   ))}
                 </div>
+
+                {/* Message informatif pour paiement à la livraison */}
+                {selectedPayment === 'COD' && (
+                  <div className="mt-4 p-4 bg-emerald-50 border border-emerald-200 rounded-xl">
+                    <p className="text-sm text-emerald-800">
+                      💵 <strong>Paiement à la livraison</strong> : Vous payez en espèces au livreur lors de la réception de votre commande. Aucun paiement en ligne requis.
+                    </p>
+                  </div>
+                )}
               </motion.div>
 
               {/* Erreur */}
@@ -496,6 +515,15 @@ export default function CheckoutPage() {
                       </p>
                     </div>
                   )}
+                  
+                  {/* Délais de livraison */}
+                  <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <p className="text-xs font-semibold text-blue-800 mb-1">🚀 Livraison express</p>
+                    <p className="text-xs text-blue-700">
+                      • <strong>Dakar :</strong> en 2h chrono<br/>
+                      • <strong>Régions :</strong> moins de 48h partout au Sénégal
+                    </p>
+                  </div>
                   <div className="flex justify-between text-lg font-bold text-stone-800 pt-3 border-t border-stone-100">
                     <span>Total</span>
                     <span className="text-amber-600">{formatPrice(total)}</span>
@@ -509,16 +537,25 @@ export default function CheckoutPage() {
                   </div>
                 </div>
 
-                {/* Bouton payer */}
+                {/* Bouton commander/payer */}
                 <button
                   type="submit"
                   disabled={isLoading}
-                  className="w-full mt-6 py-4 bg-gradient-to-r from-amber-500 to-orange-500 text-white rounded-xl font-semibold hover:from-amber-600 hover:to-orange-600 transition-all shadow-lg shadow-amber-500/25 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  className={`w-full mt-6 py-4 text-white rounded-xl font-semibold transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 ${
+                    selectedPayment === 'COD' 
+                      ? 'bg-gradient-to-r from-emerald-500 to-teal-500 hover:from-emerald-600 hover:to-teal-600 shadow-emerald-500/25'
+                      : 'bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 shadow-amber-500/25'
+                  }`}
                 >
                   {isLoading ? (
                     <>
                       <Loader2 className="w-5 h-5 animate-spin" />
-                      Redirection...
+                      {selectedPayment === 'COD' ? 'Validation...' : 'Redirection...'}
+                    </>
+                  ) : selectedPayment === 'COD' ? (
+                    <>
+                      <Check className="w-5 h-5" />
+                      Confirmer la commande • {formatPrice(total)}
                     </>
                   ) : (
                     <>
@@ -549,7 +586,10 @@ export default function CheckoutPage() {
                     </div>
                   </div>
                   <p className="text-xs text-stone-500 text-center">
-                    🔒 Paiement sécurisé par NabooPay - Vos informations seront confirmées sur la page de paiement
+                    {selectedPayment === 'COD' 
+                      ? '💵 Paiement à la livraison - Vous payez en espèces au livreur'
+                      : '🔒 Paiement sécurisé par NabooPay'
+                    }
                   </p>
                 </div>
               </motion.div>

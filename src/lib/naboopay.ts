@@ -6,6 +6,7 @@ const NABOOPAY_BASE_URL = process.env.NABOOPAY_BASE_URL || 'https://api.naboopay
 
 // Types
 export type PaymentMethod = 'WAVE' | 'ORANGE_MONEY' | 'FREE_MONEY' | 'BANK';
+export type ExtendedPaymentMethod = PaymentMethod | 'COD'; // COD = Cash On Delivery (Paiement à la livraison)
 
 export interface NabooProduct {
   name: string;

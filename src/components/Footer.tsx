@@ -1,9 +1,38 @@
 import Link from 'next/link';
-import { Leaf, MapPin, Phone, Mail, Facebook, Instagram } from 'lucide-react';
+import { Leaf, MapPin, Phone, Mail, Facebook, Instagram, Truck, Clock, CreditCard } from 'lucide-react';
 
 export default function Footer() {
   return (
     <footer className="bg-stone-900 text-stone-300">
+      {/* Delivery & Payment Banner */}
+      <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white py-4">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center md:text-left">
+            <div className="flex items-center justify-center md:justify-start gap-3">
+              <Truck className="w-6 h-6" />
+              <div>
+                <p className="font-bold text-sm">Livraison express</p>
+                <p className="text-xs text-amber-100">2h Dakar • 48h Régions</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-center gap-3">
+              <CreditCard className="w-6 h-6" />
+              <div>
+                <p className="font-bold text-sm">Paiement flexible</p>
+                <p className="text-xs text-amber-100">Wave • OM • À la livraison</p>
+              </div>
+            </div>
+            <div className="flex items-center justify-center md:justify-end gap-3">
+              <Clock className="w-6 h-6" />
+              <div>
+                <p className="font-bold text-sm">Support 7j/7</p>
+                <p className="text-xs text-amber-100">Réponse rapide WhatsApp</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
       {/* Main Footer */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">

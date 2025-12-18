@@ -166,6 +166,7 @@ export function getOrderConfirmationEmail(data: {
   discount: number;
   total: number;
   promoCode?: string;
+  isCOD?: boolean; // Paiement à la livraison
 }): { html: string; text: string } {
   const itemsHtml = data.items.map(item => `
     <tr>
@@ -256,14 +257,27 @@ export function getOrderConfirmationEmail(data: {
         </div>
         ` : ''}
         <div class="total-row final">
-          <span>Total payé</span>
+          <span>${data.isCOD ? 'Total à payer à la livraison' : 'Total payé'}</span>
           <span>${data.total.toLocaleString()} FCFA</span>
         </div>
       </div>
 
+      ${data.isCOD ? `
+      <div class="info-box" style="background: #ecfdf5; border-color: #10b981;">
+        <p style="color: #065f46;"><strong>💵 Paiement à la livraison</strong></p>
+        <p style="color: #065f46;">Préparez ${data.total.toLocaleString()} FCFA en espèces pour le livreur. Aucun paiement en ligne n'est requis.</p>
+      </div>
+      ` : ''}
+
       <div class="info-box">
         <p><strong>📞 Prochaine étape :</strong></p>
-        <p>Notre équipe vous contactera dans les 24-48h pour confirmer les détails de livraison.</p>
+        <p>Notre équipe vous contactera très bientôt pour confirmer les détails de livraison.</p>
+      </div>
+
+      <div class="info-box" style="background: #dbeafe; border-color: #3b82f6;">
+        <p style="color: #1e40af;"><strong>🚀 Délais de livraison express</strong></p>
+        <p style="color: #1e40af;">• <strong>Dakar :</strong> Livraison en 2h chrono</p>
+        <p style="color: #1e40af;">• <strong>Régions :</strong> Moins de 48h partout au Sénégal</p>
       </div>
 
       <div class="info-box" style="background: #fef3c7; border-color: #f59e0b;">
@@ -311,10 +325,17 @@ Sous-total : ${data.subtotal.toLocaleString()} FCFA
 Livraison : ${data.shipping > 0 ? data.shipping.toLocaleString() + ' FCFA' : 'Gratuite'}
 ${data.discount > 0 ? `Réduction ${data.promoCode ? '(' + data.promoCode + ')' : ''} : -${data.discount.toLocaleString()} FCFA` : ''}
 
-TOTAL PAYÉ : ${data.total.toLocaleString()} FCFA
-
+${data.isCOD ? 'TOTAL À PAYER À LA LIVRAISON' : 'TOTAL PAYÉ'} : ${data.total.toLocaleString()} FCFA
+${data.isCOD ? `
+💵 PAIEMENT À LA LIVRAISON
+Préparez ${data.total.toLocaleString()} FCFA en espèces pour le livreur.
+` : ''}
 ---
-Prochaine étape : Notre équipe vous contactera dans les 24-48h pour la livraison.
+Prochaine étape : Notre équipe vous contactera très bientôt pour la livraison.
+
+🚀 DÉLAIS DE LIVRAISON EXPRESS
+• Dakar : Livraison en 2h chrono
+• Régions : Moins de 48h partout au Sénégal
 
 Besoin d'aide ? Contactez-nous :
 +221 71 115 07 63

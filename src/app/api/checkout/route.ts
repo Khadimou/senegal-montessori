@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { naboopay, formatCartForNabooPay, PaymentMethod } from '@/lib/naboopay';
+import { naboopay, formatCartForNabooPay, PaymentMethod, ExtendedPaymentMethod } from '@/lib/naboopay';
 import { supabase } from '@/lib/supabase';
 import { sendEmail, getOrderConfirmationEmail } from '@/lib/brevo';
 
@@ -18,7 +18,7 @@ interface CheckoutRequestBody {
     category: string;
     description?: string;
   }>;
-  paymentMethod: PaymentMethod;
+  paymentMethod: ExtendedPaymentMethod;
   shipping?: number;
   promoCode?: {
     id: string;
@@ -154,7 +154,83 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // 2. Créer la transaction NabooPay
+    // 2. Gestion du Paiement à la livraison (COD)
+    if (paymentMethod === 'COD') {
+      console.log(`[Checkout COD] Commande ${order.id} créée - Paiement à la livraison`);
+      
+      // Mettre à jour le statut - commande confirmée mais paiement en attente
+      await supabase
+        .from('orders')
+        .update({
+          status: 'confirmed',
+          payment_status: 'pending', // Sera mis à 'done' à la livraison
+        })
+        .eq('id', order.id);
+
+      // Décrémenter le stock
+      for (const item of items) {
+        const { data: product } = await supabase
+          .from('products')
+          .select('stock_quantity')
+          .eq('id', item.id)
+          .single();
+        
+        if (product) {
+          const newStock = Math.max(0, (product.stock_quantity || 0) - item.quantity);
+          await supabase
+            .from('products')
+            .update({ 
+              stock_quantity: newStock,
+              updated_at: new Date().toISOString(),
+            })
+            .eq('id', item.id);
+          console.log(`[Checkout COD] Stock ${item.name}: -${item.quantity} (nouveau: ${newStock})`);
+        }
+      }
+
+      // Envoyer l'email de confirmation
+      try {
+        const { html, text } = getOrderConfirmationEmail({
+          customerName: customer.name,
+          orderId: order.id,
+          items: items.map(item => ({
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+          })),
+          subtotal,
+          shipping: shippingCost,
+          discount,
+          total,
+          promoCode: promoCode?.code,
+          isCOD: true, // Indiquer que c'est un paiement à la livraison
+        });
+
+        const emailResult = await sendEmail({
+          to: [{ email: customer.email, name: customer.name }],
+          subject: `Confirmation de commande #${order.id.slice(0, 8).toUpperCase()} - Montessori Sénégal`,
+          htmlContent: html,
+          textContent: text,
+        });
+
+        if (emailResult.success) {
+          console.log(`[Checkout COD] Email de confirmation envoyé à ${customer.email}`);
+        } else {
+          console.error(`[Checkout COD] Erreur envoi email:`, emailResult.error);
+        }
+      } catch (emailError) {
+        console.error('[Checkout COD] Erreur lors de l\'envoi de l\'email:', emailError);
+      }
+
+      return NextResponse.json({
+        success: true,
+        order_id: order.id,
+        is_cod: true,
+        message: 'Commande confirmée - Paiement à la livraison',
+      });
+    }
+
+    // 3. Créer la transaction NabooPay (pour les autres méthodes de paiement)
     const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
     const successUrl = `${baseUrl}/checkout/success?order_id=${order.id}`;
     const errorUrl = `${baseUrl}/checkout/error?order_id=${order.id}`;

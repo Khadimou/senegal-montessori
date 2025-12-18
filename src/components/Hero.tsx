@@ -105,21 +105,21 @@ export default function Hero() {
               className="flex flex-wrap gap-6 pt-8 border-t border-stone-200"
             >
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
-                  <Truck className="w-6 h-6 text-emerald-600" />
+                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
+                  <Truck className="w-6 h-6 text-blue-600" />
                 </div>
                 <div>
-                  <p className="font-semibold text-stone-800">Livraison gratuite</p>
-                  <p className="text-sm text-stone-500">Partout au Sénégal dès 10,000 FCFA</p>
+                  <p className="font-semibold text-stone-800">🚀 Livraison express</p>
+                  <p className="text-sm text-stone-500">2h Dakar • 48h Régions</p>
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-                  <ShieldCheck className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+                  <ShieldCheck className="w-6 h-6 text-emerald-600" />
                 </div>
                 <div>
-                  <p className="font-semibold text-stone-800">Qualité garantie</p>
-                  <p className="text-sm text-stone-500">Matériaux certifiés</p>
+                  <p className="font-semibold text-stone-800">Paiement à la livraison</p>
+                  <p className="text-sm text-stone-500">Ou Wave / Orange Money</p>
                 </div>
               </div>
             </motion.div>

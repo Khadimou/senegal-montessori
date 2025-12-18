@@ -389,11 +389,29 @@ export default function ProductDetails({ product, relatedProducts }: ProductDeta
               </div>
             )}
 
+            {/* Délai de livraison */}
+            <div className="mt-8 p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-200">
+              <div className="flex items-center gap-2 mb-2">
+                <Truck className="w-5 h-5 text-blue-600" />
+                <span className="font-semibold text-blue-800">🚀 Livraison express</span>
+              </div>
+              <div className="grid grid-cols-2 gap-3 text-sm">
+                <div className="bg-white/60 rounded-lg p-2 text-center">
+                  <p className="font-bold text-blue-700">2h</p>
+                  <p className="text-xs text-blue-600">Dakar</p>
+                </div>
+                <div className="bg-white/60 rounded-lg p-2 text-center">
+                  <p className="font-bold text-blue-700">&lt;48h</p>
+                  <p className="text-xs text-blue-600">Tout le Sénégal</p>
+                </div>
+              </div>
+            </div>
+
             {/* Trust Badges */}
-            <div className="mt-8 grid grid-cols-3 gap-4">
+            <div className="mt-4 grid grid-cols-3 gap-4">
               <div className="flex flex-col items-center text-center p-4 bg-white rounded-xl border border-stone-100">
                 <Truck className="w-6 h-6 text-amber-600 mb-2" />
-                <span className="text-xs text-stone-600">Livraison Dakar</span>
+                <span className="text-xs text-stone-600">Livraison gratuite dès 10k</span>
               </div>
               <div className="flex flex-col items-center text-center p-4 bg-white rounded-xl border border-stone-100">
                 <ShieldCheck className="w-6 h-6 text-amber-600 mb-2" />

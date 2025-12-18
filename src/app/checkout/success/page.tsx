@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { CheckCircle, Package, ArrowRight, Home } from 'lucide-react';
+import { CheckCircle, Package, ArrowRight, Home, Banknote } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { supabase } from '@/lib/supabase';
 import * as analytics from '@/lib/analytics';
@@ -13,6 +13,7 @@ import * as metaPixel from '@/lib/meta-pixel';
 function SuccessContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('order_id');
+  const isCOD = searchParams.get('cod') === 'true';
   const [showConfetti, setShowConfetti] = useState(false);
   const [tracked, setTracked] = useState(false);
 
@@ -106,7 +107,7 @@ function SuccessContent() {
           transition={{ delay: 0.3 }}
           className="text-3xl font-bold text-stone-800 mb-4"
         >
-          Paiement réussi ! 🎉
+          {isCOD ? 'Commande confirmée ! 🎉' : 'Paiement réussi ! 🎉'}
         </motion.h1>
 
         <motion.p
@@ -115,7 +116,10 @@ function SuccessContent() {
           transition={{ delay: 0.4 }}
           className="text-lg text-stone-600 mb-6"
         >
-          Merci pour votre commande ! Vous recevrez bientôt un email de confirmation.
+          {isCOD 
+            ? 'Merci pour votre commande ! Vous payerez à la livraison.' 
+            : 'Merci pour votre commande ! Vous recevrez bientôt un email de confirmation.'
+          }
         </motion.p>
 
         {orderId && (
@@ -136,11 +140,35 @@ function SuccessContent() {
           transition={{ delay: 0.6 }}
           className="space-y-4"
         >
+          {isCOD && (
+            <div className="flex items-center gap-3 text-left p-4 bg-emerald-50 rounded-xl border border-emerald-200">
+              <Banknote className="w-6 h-6 text-emerald-600 flex-shrink-0" />
+              <div>
+                <p className="font-medium text-emerald-800">Paiement à la livraison</p>
+                <p className="text-sm text-emerald-600">Préparez le montant en espèces pour le livreur</p>
+              </div>
+            </div>
+          )}
           <div className="flex items-center gap-3 text-left p-4 bg-amber-50 rounded-xl">
             <Package className="w-6 h-6 text-amber-600 flex-shrink-0" />
             <div>
               <p className="font-medium text-stone-800">Livraison en cours de préparation</p>
               <p className="text-sm text-stone-500">Vous serez contacté pour la livraison</p>
+            </div>
+          </div>
+          
+          {/* Délais de livraison */}
+          <div className="p-4 bg-blue-50 rounded-xl border border-blue-200">
+            <p className="font-medium text-blue-800 mb-2">🚀 Délais de livraison</p>
+            <div className="grid grid-cols-2 gap-2 text-sm">
+              <div className="text-blue-700">
+                <span className="font-semibold">Dakar</span>
+                <p className="text-blue-600">En 2h chrono</p>
+              </div>
+              <div className="text-blue-700">
+                <span className="font-semibold">Régions</span>
+                <p className="text-blue-600">Moins de 48h</p>
+              </div>
             </div>
           </div>
         </motion.div>
