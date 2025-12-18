@@ -1,10 +1,9 @@
-import Link from 'next/link';
+﻿import Link from 'next/link';
 import { Leaf, MapPin, Phone, Mail, Facebook, Instagram, Truck, Clock, CreditCard } from 'lucide-react';
 
 export default function Footer() {
   return (
     <footer className="bg-stone-900 text-stone-300">
-      {/* Delivery & Payment Banner */}
       <div className="bg-gradient-to-r from-amber-500 to-orange-500 text-white py-4">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center md:text-left">
@@ -12,157 +11,73 @@ export default function Footer() {
               <Truck className="w-6 h-6" />
               <div>
                 <p className="font-bold text-sm">Livraison express</p>
-                <p className="text-xs text-amber-100">2h Dakar • 48h Régions</p>
+                <p className="text-xs text-amber-100">2h Dakar - 48h Regions</p>
               </div>
             </div>
             <div className="flex items-center justify-center gap-3">
               <CreditCard className="w-6 h-6" />
               <div>
                 <p className="font-bold text-sm">Paiement flexible</p>
-                <p className="text-xs text-amber-100">Wave • OM • À la livraison</p>
+                <p className="text-xs text-amber-100">Wave - OM - A la livraison</p>
               </div>
             </div>
             <div className="flex items-center justify-center md:justify-end gap-3">
               <Clock className="w-6 h-6" />
               <div>
                 <p className="font-bold text-sm">Support 7j/7</p>
-                <p className="text-xs text-amber-100">Réponse rapide WhatsApp</p>
+                <p className="text-xs text-amber-100">Reponse rapide WhatsApp</p>
               </div>
             </div>
           </div>
         </div>
       </div>
-      
-      {/* Main Footer */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
-          {/* Brand */}
           <div className="space-y-6">
             <Link href="/" className="flex items-center gap-3">
               <div className="w-12 h-12 bg-gradient-to-br from-amber-400 to-orange-500 rounded-2xl flex items-center justify-center">
                 <Leaf className="w-7 h-7 text-white" />
               </div>
               <div className="flex flex-col">
-                <span className="text-xl font-bold text-white tracking-tight">
-                  Montessori
-                </span>
-                <span className="text-xs text-amber-500 font-medium -mt-1">
-                  Sénégal
-                </span>
+                <span className="text-xl font-bold text-white tracking-tight">Montessori</span>
+                <span className="text-xs text-amber-500 font-medium -mt-1">Senegal</span>
               </div>
             </Link>
-            <p className="text-stone-400 leading-relaxed">
-              Votre boutique de jouets éducatifs Montessori au Sénégal. 
-              Des matériels de qualité pour l&apos;épanouissement de vos enfants.
-            </p>
+            <p className="text-stone-400 leading-relaxed">Votre boutique de jouets educatifs Montessori au Senegal. Des materiels de qualite pour l&apos;epanouissement de vos enfants.</p>
             <div className="flex gap-4">
-              <a
-                href="https://facebook.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 bg-stone-800 rounded-xl flex items-center justify-center hover:bg-amber-500 transition-colors"
-                aria-label="Facebook"
-              >
-                <Facebook className="w-5 h-5" />
-              </a>
-              <a
-                href="https://instagram.com"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-10 h-10 bg-stone-800 rounded-xl flex items-center justify-center hover:bg-amber-500 transition-colors"
-                aria-label="Instagram"
-              >
-                <Instagram className="w-5 h-5" />
-              </a>
+              <a href="https://facebook.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-stone-800 rounded-xl flex items-center justify-center hover:bg-amber-500 transition-colors" aria-label="Facebook"><Facebook className="w-5 h-5" /></a>
+              <a href="https://instagram.com" target="_blank" rel="noopener noreferrer" className="w-10 h-10 bg-stone-800 rounded-xl flex items-center justify-center hover:bg-amber-500 transition-colors" aria-label="Instagram"><Instagram className="w-5 h-5" /></a>
             </div>
           </div>
-
-          {/* Quick Links */}
           <div>
             <h3 className="text-white font-semibold mb-6">Navigation</h3>
             <ul className="space-y-3">
-              {[
-                { href: '/', label: 'Accueil' },
-                { href: '/produits', label: 'Boutique' },
-                { href: '/a-propos', label: 'À Propos' },
-                { href: '/contact', label: 'Contact' },
-              ].map((link) => (
-                <li key={link.href}>
-                  <Link
-                    href={link.href}
-                    className="text-stone-400 hover:text-amber-500 transition-colors"
-                  >
-                    {link.label}
-                  </Link>
-                </li>
-              ))}
+              {[{ href: '/', label: 'Accueil' },{ href: '/produits', label: 'Boutique' },{ href: '/ambassadeur', label: 'Ambassadeur' },{ href: '/a-propos', label: 'A Propos' },{ href: '/contact', label: 'Contact' }].map((link) => (<li key={link.href}><Link href={link.href} className="text-stone-400 hover:text-amber-500 transition-colors">{link.label}</Link></li>))}
             </ul>
           </div>
-
-          {/* Categories */}
           <div>
-            <h3 className="text-white font-semibold mb-6">Catégories</h3>
+            <h3 className="text-white font-semibold mb-6">Categories</h3>
             <ul className="space-y-3">
-              {[
-                'Vie Pratique',
-                'Matériel Sensoriel',
-                'Langage',
-                'Mathématiques',
-                'Culture & Sciences',
-              ].map((category) => (
-                <li key={category}>
-                  <Link
-                    href="/produits"
-                    className="text-stone-400 hover:text-amber-500 transition-colors"
-                  >
-                    {category}
-                  </Link>
-                </li>
-              ))}
+              {['Vie Pratique','Materiel Sensoriel','Langage','Mathematiques','Culture & Sciences'].map((category) => (<li key={category}><Link href="/produits" className="text-stone-400 hover:text-amber-500 transition-colors">{category}</Link></li>))}
             </ul>
           </div>
-
-          {/* Contact */}
           <div>
             <h3 className="text-white font-semibold mb-6">Contact</h3>
             <ul className="space-y-4">
-              <li className="flex items-start gap-3">
-                <MapPin className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" />
-                <span className="text-stone-400">
-                  Almadies, Dakar<br />Sénégal
-                </span>
-              </li>
-              <li className="flex items-center gap-3">
-                <Phone className="w-5 h-5 text-amber-500 flex-shrink-0" />
-                <a href="tel:+221711150763" className="text-stone-400 hover:text-amber-500 transition-colors">
-                  +221 71 115 07 63
-                </a>
-              </li>
-              <li className="flex items-center gap-3">
-                <Mail className="w-5 h-5 text-amber-500 flex-shrink-0" />
-                <a href="mailto:contact@montessori-senegal.com" className="text-stone-400 hover:text-amber-500 transition-colors">
-                  contact@montessori-senegal.com
-                </a>
-              </li>
+              <li className="flex items-start gap-3"><MapPin className="w-5 h-5 text-amber-500 flex-shrink-0 mt-0.5" /><span className="text-stone-400">Almadies, Dakar<br />Senegal</span></li>
+              <li className="flex items-center gap-3"><Phone className="w-5 h-5 text-amber-500 flex-shrink-0" /><a href="tel:+221711150763" className="text-stone-400 hover:text-amber-500 transition-colors">+221 71 115 07 63</a></li>
+              <li className="flex items-center gap-3"><Mail className="w-5 h-5 text-amber-500 flex-shrink-0" /><a href="mailto:contact@montessori-senegal.com" className="text-stone-400 hover:text-amber-500 transition-colors">contact@montessori-senegal.com</a></li>
             </ul>
           </div>
         </div>
       </div>
-
-      {/* Bottom Bar */}
       <div className="border-t border-stone-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <p className="text-stone-500 text-sm">
-              © {new Date().getFullYear()} Montessori Sénégal. Tous droits réservés.
-            </p>
+            <p className="text-stone-500 text-sm">&copy; {new Date().getFullYear()} Montessori Senegal. Tous droits reserves.</p>
             <div className="flex gap-6 text-sm">
-              <Link href="#" className="text-stone-500 hover:text-amber-500 transition-colors">
-                Mentions légales
-              </Link>
-              <Link href="#" className="text-stone-500 hover:text-amber-500 transition-colors">
-                Politique de confidentialité
-              </Link>
+              <Link href="#" className="text-stone-500 hover:text-amber-500 transition-colors">Mentions legales</Link>
+              <Link href="#" className="text-stone-500 hover:text-amber-500 transition-colors">Politique de confidentialite</Link>
             </div>
           </div>
         </div>
@@ -170,4 +85,3 @@ export default function Footer() {
     </footer>
   );
 }
-
