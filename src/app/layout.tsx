@@ -6,6 +6,7 @@ import Footer from "@/components/Footer";
 import ProductsProvider from "@/components/ProductsProvider";
 import GoogleAnalytics from "@/components/GoogleAnalytics";
 import MetaPixel from "@/components/MetaPixel";
+import GoogleTagManager, { GoogleTagManagerNoScript } from "@/components/GoogleTagManager";
 
 const dmSans = DM_Sans({
   subsets: ["latin"],
@@ -40,7 +41,11 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="fr" className={`${dmSans.variable} ${playfair.variable}`}>
+      <head>
+        <GoogleTagManager />
+      </head>
       <body className="font-sans antialiased bg-stone-50 text-stone-900">
+        <GoogleTagManagerNoScript />
         <GoogleAnalytics />
         <MetaPixel />
         <ProductsProvider>
